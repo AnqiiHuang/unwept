@@ -1,0 +1,17 @@
+html,
+body,
+#game {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: #100e0c;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "PMingLiU", serif;
+}
+
+canvas {
+  display: block;
+}
