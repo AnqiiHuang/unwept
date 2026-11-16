@@ -71,6 +71,16 @@ export class WorldScene extends Phaser.Scene {
 
   create() {
     this.alive = true;
+    this.markers = [];
+    this.spots = [];
+    this.bundleTexts = [];
+    this.targetX = null;
+    this.pending = null;
+    this.metLatch = false;
+    this.focus = -1;
+    this.dialogRoot = undefined;
+    this.choiceRoot = undefined;
+    this.panelRoot = undefined;
     this.sceneId = getState().scene;
     this.facing = getState().facing;
     const area = this.sceneId === 'PRO-01' ? LAYOUT.pro01 : this.sceneId === 'PRO-02' ? LAYOUT.pro02 : LAYOUT.hall;
