@@ -54,6 +54,14 @@ export interface GameState {
   curtainLifted: boolean;
   pz01Done: boolean;
   roundAck: boolean;
+  commissionDone: boolean;
+  bookSeen: boolean;
+  l02: boolean;
+  addressSung: boolean;
+  lampTaken: boolean;
+  e10Read: boolean;
+  lipSeen: boolean;
+  gongSeen: boolean;
   named: string[];
   sent: string[];
   seenEcho: string[];
@@ -101,6 +109,15 @@ export type Action =
   | { type: 'demoHook' }
   | { type: 'liftCurtain' }
   | { type: 'ackRound' }
+  | { type: 'acceptCommission' }
+  | { type: 'seeBook' }
+  | { type: 'hearL02' }
+  | { type: 'seeLip' }
+  | { type: 'seeTally' }
+  | { type: 'seeGong' }
+  | { type: 'singAddress' }
+  | { type: 'confirmVerse'; card: 'l02' | 'boat' | 'tea' }
+  | { type: 'takeLamp' }
   | { type: 'travel'; to: SceneId; x: number; facing: 1 | -1 }
   | { type: 'move'; x: number; facing: 1 | -1 };
 
@@ -111,12 +128,10 @@ export interface ApplyResult {
 }
 
 const PROTECTED = {
-  pz02Done: false,
   letterKnown: false,
   birthKnown: false,
   wellOpened: false,
   sang20th: false,
-  sawTally: false,
   tallyRead: false,
   trustLan: 'hold',
   trustJian: 'hold',
@@ -171,6 +186,16 @@ export function newGame(): GameState {
     curtainLifted: false,
     pz01Done: false,
     roundAck: false,
+    commissionDone: false,
+    bookSeen: false,
+    l02: false,
+    addressSung: false,
+    lampTaken: false,
+    e10Read: false,
+    lipSeen: false,
+    gongSeen: false,
+    pz02Done: false,
+    sawTally: false,
     named: [],
     sent: [],
     seenEcho: [],
@@ -405,6 +430,69 @@ export function apply(input: GameState, action: Action): { state: GameState; res
       if (s.roundAck) return done(input, 'ack', true);
       s.roundAck = true;
       return done(s, 'ack');
+    case 'acceptCommission':
+      if (!s.pz01Done) return blocked(input, 'need-pz01');
+      if (s.commissionDone) return done(input, 'commission', true);
+      s.commissionDone = true;
+      s.e10Read = true;
+      pushOnce(s.evidence, 'E10');
+      pushOnce(s.steps, 'CH1.commission');
+      return done(s, 'commission');
+    case 'seeBook':
+      if (!s.pz01Done) return blocked(input, 'need-pz01');
+      if (s.bookSeen) return done(input, 'book', true);
+      s.bookSeen = true;
+      pushOnce(s.notes, 'BOOK');
+      return done(s, 'book');
+    case 'hearL02':
+      if (!s.pz01Done) return blocked(input, 'need-pz01');
+      if (s.l02) return done(input, 'l02', true);
+      s.l02 = true;
+      pushOnce(s.notes, 'L02');
+      pushOnce(s.steps, 'L02');
+      return done(s, 'l02');
+    case 'seeLip':
+      if (!s.pz01Done) return blocked(input, 'need-pz01');
+      if (s.lipSeen) return done(input, 'lip', true);
+      s.lipSeen = true;
+      pushOnce(s.notes, 'LIP');
+      return done(s, 'lip');
+    case 'seeTally':
+      if (!s.pz01Done) return blocked(input, 'need-pz01');
+      if (s.sawTally) return done(input, 'tally', true);
+      s.sawTally = true;
+      pushOnce(s.notes, 'TALLY');
+      return done(s, 'tally');
+    case 'seeGong':
+      if (!s.pz01Done) return blocked(input, 'need-pz01');
+      if (s.gongSeen) return done(input, 'gong', true);
+      s.gongSeen = true;
+      pushOnce(s.notes, 'GONG');
+      return done(s, 'gong');
+    case 'singAddress':
+      if (!s.commissionDone) return blocked(input, 'need-commission');
+      if (s.addressSung) return done(input, 'address', true);
+      s.addressSung = true;
+      pushOnce(s.steps, 'PZ-02.address');
+      return done(s, 'address');
+    case 'confirmVerse': {
+      if (!s.addressSung) return blocked(input, 'need-address');
+      if (action.card === 'boat') return blocked(input, 'wrong-boat');
+      if (action.card === 'tea') return blocked(input, 'wrong-tea');
+      if (!s.l02) return blocked(input, 'need-l02');
+      if (s.pz02Done) return done(input, 'pz02', true);
+      s.pz02Done = true;
+      pushOnce(s.notes, 'PZ02');
+      pushOnce(s.steps, 'PZ-02.done');
+      return done(s, 'pz02');
+    }
+    case 'takeLamp':
+      if (!s.pz02Done) return blocked(input, 'need-pz02');
+      if (s.lampTaken) return done(input, 'lamp', true);
+      s.lampTaken = true;
+      pushOnce(s.inventory, 'LAMP');
+      pushOnce(s.steps, 'CH1.lamp');
+      return done(s, 'lamp');
     case 'travel': {
       const block = travelBlock(s, action.to);
       if (block) return blocked(input, block);
@@ -419,7 +507,16 @@ export function apply(input: GameState, action: Action): { state: GameState; res
 }
 
 export function objective(s: GameState): string {
-  if (s.pz01Done) return '本轮开发到孝布辨亲为止。可以回看岸边和村口。PZ-02 还没开始。';
+  if (s.scene === 'CH1-01' && s.pz01Done) {
+    if (s.lampTaken) return '灯已经在手里。下一步是出门看街窗。这一轮先停在门廊。';
+    if (s.pz02Done) return '街外有人哭。去跟桂芬借门廊的灯。';
+    if (s.addressSung && !s.l02) return '堂前已经叫过谷老爹。要唱的那句，还得听桂芬亲眼看见的事。';
+    if (s.addressSung) return '到帷后。先翻记录，再按「唱这一句」。翻看不算唱错。';
+    if (!s.commissionDone) return '孝布已经摆好。去供桌跟建军谈这三夜。';
+    if (!s.bookSeen) return '凳脚边摊着谷雨的作业本。先看看那个「雨」字。';
+    if (!s.l02) return '本子上先记着待问。去问桂芬，她当时看见什么。';
+    return '可以在堂前起式。先叫谷老爹，再起腔。';
+  }
   if (s.scene === 'CH1-01') {
     if (!s.hallIntro) return '刚进灵堂。';
     if (!s.stoolSteadied) return '帮桂芬把那张矮凳扶稳。';
@@ -441,6 +538,10 @@ export function objective(s: GameState): string {
 
 export function progressLabel(s: GameState): string {
   if (!s.openingDone) return '开场还没看完';
+  if (s.lampTaken) return '谷家灵堂 · 灯已借到';
+  if (s.pz02Done) return '谷家灵堂 · 起式已唱';
+  if (s.addressSung) return '谷家灵堂 · 堂前已起';
+  if (s.l02) return '谷家灵堂 · 证词已记下';
   if (s.pz01Done) return '谷家灵堂 · 孝布已辨明';
   if (s.scene === 'CH1-01') return '谷家灵堂';
   if (s.teaDecided) return s.drankOathWater ? '村口 · 茶已喝下' : '村口 · 茶已倒掉';
@@ -489,15 +590,51 @@ export function deserialize(raw: string): GameState {
     notes: Array.isArray(rec.notes) ? rec.notes.filter((v) => typeof v === 'string') : [],
     evidence: Array.isArray(rec.evidence) ? rec.evidence.filter((v) => typeof v === 'string') : [],
     steps: Array.isArray(rec.steps) ? rec.steps.filter((v) => typeof v === 'string') : [],
-    named: Array.isArray(rec.named) ? rec.named.filter((v) => typeof v === 'string') : [],
-    sent: Array.isArray(rec.sent) ? rec.sent.filter((v) => typeof v === 'string') : [],
-    seenEcho: Array.isArray(rec.seenEcho) ? rec.seenEcho.filter((v) => typeof v === 'string') : [],
     facing: rec.facing === -1 ? -1 : 1,
     oathEffect: rec.oathEffect === 'suppressed' ? 'suppressed' : 'clear',
     hookCloth: rec.hookCloth === 'long' || rec.hookCloth === 'short' ? rec.hookCloth : '',
     stoolCloth: rec.stoolCloth === 'long' || rec.stoolCloth === 'short' ? rec.stoolCloth : '',
+    pz02Done: rec.pz02Done === true,
+    sawTally: rec.sawTally === true,
+    commissionDone: rec.commissionDone === true,
+    bookSeen: rec.bookSeen === true,
+    l02: rec.l02 === true,
+    addressSung: rec.addressSung === true,
+    lampTaken: rec.lampTaken === true,
+    e10Read: rec.e10Read === true,
+    lipSeen: rec.lipSeen === true,
+    gongSeen: rec.gongSeen === true,
+    letterKnown: false,
+    birthKnown: false,
+    wellOpened: false,
+    sang20th: false,
+    tallyRead: false,
+    trustLan: 'hold',
+    trustJian: 'hold',
+    trustZhou: 'hold',
+    dealState: 'none',
+    publicFile: false,
+    villageAck: false,
+    familyKnown: false,
+    homeExit: false,
+    escort: false,
+    yuState: 'in_village',
+    named: [],
+    sent: [],
+    seenEcho: [],
   };
   return merged;
+}
+
+export function journalStatus(s: GameState): string {
+  if (s.lampTaken) return 'PZ-02 已完成。灯已借到，下一步是街窗。';
+  if (s.pz02Done) return 'PZ-02 已完成。堂前称过谷老爹，私唱用的是桂芬亲眼看见的那句。';
+  if (s.addressSung && s.l02) return '堂前已经起过。私唱还没对上。';
+  if (s.addressSung) return '堂前已经起过。扶笔那句还是待问。';
+  if (s.l02) return 'L02 已有。堂前还没起式。';
+  if (s.bookSeen) return '作业本记着待问。PZ-02 还没完成。';
+  if (s.pz01Done) return '孝布已经辨明。PZ-02 还没完成。';
+  return 'PZ-02 还没开始。';
 }
 
 export type Peek =

@@ -37,7 +37,7 @@ export class TitleScene extends Phaser.Scene {
     });
     cont.setEnabled(peek.kind === 'ok');
     makeButton(this, 960, 780, 420, 72, '设置', () => this.openSettings());
-    this.add.text(960, 980, '开发版　·　本轮到灵堂孝布辨亲为止', textStyle(22, '#b5a894')).setOrigin(0.5);
+    this.add.text(960, 980, '开发版　·　借到灯之后先停在门廊', textStyle(22, '#b5a894')).setOrigin(0.5);
 
     this.input.once('pointerdown', () => audio.ensure(getSettings().master));
     this.input.keyboard?.once('keydown', () => audio.ensure(getSettings().master));

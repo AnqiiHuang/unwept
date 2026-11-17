@@ -71,6 +71,11 @@ export class AudioBus {
     else if (id === 'continue') tone(330, 0.55, 'sine', 0.04);
     else if (id === 'cloth') noise(0.12, 0.08);
     else if (id === 'key') tone(880, 0.08, 'square', 0.02);
+    else if (id === 'wick') {
+      tone(520, 0.2, 'triangle', 0.03);
+      tone(390, 0.45, 'sine', 0.04, 0.18);
+    }
+    else if (id === 'cry') tone(240, 0.7, 'sine', 0.035);
     else if (id === 'mud') noise(0.16, 0.1);
   }
 }

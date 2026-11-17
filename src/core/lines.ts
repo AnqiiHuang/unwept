@@ -1,4 +1,4 @@
-export type Speaker = 'xiaoman' | 'changgui' | 'guyu' | 'guifen' | 'jianjun' | 'narration' | 'continuation' | 'yupo';
+export type Speaker = 'xiaoman' | 'changgui' | 'guyu' | 'guifen' | 'jianjun' | 'xiulan' | 'narration' | 'continuation' | 'yupo';
 
 export type SoundId =
   | 'scrape'
@@ -11,7 +11,9 @@ export type SoundId =
   | 'sing'
   | 'continue'
   | 'cloth'
-  | 'key';
+  | 'key'
+  | 'wick'
+  | 'cry';
 
 export interface Line {
   speaker: Speaker;
@@ -26,6 +28,7 @@ export const SPEAKER_NAME: Record<Speaker, string> = {
   guyu: '谷雨',
   guifen: '邹桂芬',
   jianjun: '谷建军',
+  xiulan: '谷秀兰',
   narration: '旁白',
   continuation: '续腔',
   yupo: '余婆',
@@ -68,12 +71,40 @@ export const NOTES: Record<string, { title: string; body: string }> = {
     title: '帷后旧孝布',
     body: '五、五、五、四，共十九条。比今天这两条硬，折痕很深。桂芬说是怀山自己收的。没有名册。',
   },
+  BOOK: {
+    title: '作业本　待问',
+    body: '短粉笔和作业本。纸上有个过大的「雨」，末点挤在边线外。谁扶她写过，待问。',
+  },
+  L02: {
+    title: 'L02　怀山扶谷雨握笔',
+    body: '桂芬亲见。怀山扶孙女写「雨」，把她攥紧粉笔的手拨松，最后一点让她自己落。',
+  },
+  LIP: {
+    title: '唇缝的干泥',
+    body: '唇缝里有干泥，来处未明。秀兰说她擦过一遍。',
+  },
+  TALLY: {
+    title: '手里的竹片',
+    body: '十九道旧刻痕，末端另有一道浅痕，共二十道。看清了手边，还没有读懂。',
+  },
+  GONG: {
+    title: '裹着的小锣',
+    body: '蓝布裹严。怀山嫌它挨着柜门响，自己裹的。谷雨把松角塞了回去。',
+  },
+  PZ02: {
+    title: '有据的一句',
+    body: '桂芬亲见怀山扶孙女握粉笔。堂前只叫了谷老爹。灯芯合成一股，碗里的细纹还在。',
+  },
 };
 
 export const EVIDENCE: Record<string, { title: string; body: string }> = {
   E23: {
     title: 'E23　清场公告',
     body: '幸福水库低水位检查　10 月 21 日至 27 日。10 月 27 日早六时清场，通往旧村的道路封闭。工程组　10 月 21 日。目前只登记公告这一截。',
+  },
+  E10: {
+    title: 'E10　眼前这封委托',
+    body: '请余家来新坳，为谷家守三夜。只哭，不唱名字，不数生平。信背新添：出殡前结清。谷建军。现在只看见聘请和这条限制。',
   },
 };
 
@@ -89,6 +120,10 @@ export const ITEM_TEXT: Record<string, { name: string; body: string }> = {
   short: {
     name: '短针孝布',
     body: '折短了，角上缝着一针，免得踩脚。是给谷雨的那条。',
+  },
+  LAMP: {
+    name: '门廊的灯',
+    body: '桂芬说这盏归小满用。用完搁回钩上。还没出门。',
   },
 };
 

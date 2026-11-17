@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
-import { apply, objective, travelBlock, type Action, type ApplyResult, type ClothId, type SceneId } from '../core/state';
+import { apply, journalStatus, objective, travelBlock, type Action, type ApplyResult, type ClothId, type SceneId } from '../core/state';
 import { EVIDENCE, ITEM_TEXT, LINES, NOTES, SPEAKER_NAME, TRAVEL_HINT, type Line, type Speaker } from '../core/lines';
+import { runBody, runBook, runCommission, runGong, runLamp, runRite, runTestimony, type HallUi } from '../data/hallAfter';
 import { audio } from '../game/audio';
-import { createActor, setBowl } from '../game/actors';
+import { createActor, setBowl, syncActor } from '../game/actors';
 import { FOOT, LAYOUT } from '../game/layout';
 import { commit, getSettings, getState, setSettings, setState } from '../game/session';
 import { paintHall, paintPro01, paintPro02 } from '../game/scenery';
@@ -25,6 +26,7 @@ const PORTRAIT: Partial<Record<Speaker, number>> = {
   guyu: 0xc4b09a,
   guifen: 0x8d6f66,
   jianjun: 0x4e5960,
+  xiulan: 0x8a8478,
 };
 
 export class WorldScene extends Phaser.Scene {
@@ -97,15 +99,15 @@ export class WorldScene extends Phaser.Scene {
     this.player.scaleX = this.facing;
     if (this.sceneId === 'PRO-01') {
       createActor(this, 'changgui').setPosition(LAYOUT.pro01.changgui, FOOT).setDepth(16);
-      createActor(this, 'guyu').setPosition(LAYOUT.pro01.stake + 70, FOOT).setDepth(16).setScale(0.82, 0.82);
+      createActor(this, 'guyu').setPosition(LAYOUT.pro01.stake + 70, FOOT).setDepth(16);
       this.buildPro01();
     } else if (this.sceneId === 'PRO-02') {
       createActor(this, 'guifen').setPosition(LAYOUT.pro02.guifen, FOOT).setDepth(16);
-      createActor(this, 'guyu').setPosition(LAYOUT.pro02.guifen - 180, FOOT).setDepth(16).setScale(0.82, 0.82);
+      createActor(this, 'guyu').setPosition(LAYOUT.pro02.guifen - 180, FOOT).setDepth(16);
       this.buildPro02();
     } else {
       createActor(this, 'guifen').setPosition(LAYOUT.hall.guifen, FOOT).setDepth(16);
-      createActor(this, 'guyu').setPosition(LAYOUT.hall.guyu, FOOT).setDepth(16).setScale(0.82, 0.82);
+      createActor(this, 'guyu').setPosition(LAYOUT.hall.guyu, FOOT).setDepth(16);
       createActor(this, 'jianjun').setPosition(LAYOUT.hall.jianjun, FOOT).setDepth(16);
       this.buildHall();
     }
@@ -151,8 +153,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.mode === 'play') this.move(dt);
     this.player.y = FOOT + (this.moving && !getSettings().reduceMotion ? Math.sin(this.time.now / 90) * 4 : 0);
     this.player.scaleX = this.facing;
-    const bowl = this.player.getData('bowl') as Phaser.GameObjects.Graphics;
-    bowl?.setY(this.bowlHigh ? -24 : 0);
+    syncActor(this.player, this.moving, this.time.now, this.bowlHigh);
     this.syncMarkers();
     this.objectiveText.setText(objective(getState()));
     this.helpText.setVisible(this.mode === 'play');
@@ -308,6 +309,21 @@ export class WorldScene extends Phaser.Scene {
       if (s.hookCloth === 'long') this.drawStrip(LAYOUT.hall.hook - 8, 530, 150);
       if (s.stoolCloth === 'short') this.drawStrip(LAYOUT.hall.stool - 6, 640, 78, true);
       if (s.curtainLifted) {
+        const wickX = LAYOUT.hall.curtain - 120;
+        const wickY = 390;
+        this.props.fillStyle(0xf2d48a, 0.95);
+        if (s.pz02Done) {
+          this.props.fillTriangle(wickX, wickY + 28, wickX - 7, wickY, wickX + 7, wickY);
+        } else if (s.addressSung) {
+          this.props.fillTriangle(wickX - 8, wickY + 28, wickX - 14, wickY, wickX - 2, wickY);
+          this.props.fillTriangle(wickX + 8, wickY + 28, wickX + 2, wickY, wickX + 14, wickY);
+        }
+        if (s.lampTaken) {
+          this.props.fillStyle(0xc4552a, 1);
+          this.props.fillRoundedRect(LAYOUT.hall.door + 28, FOOT - 118, 18, 28, 3);
+          this.props.fillStyle(0xf2d48a, 1);
+          this.props.fillCircle(LAYOUT.hall.door + 37, FOOT - 126, 6);
+        }
         const labels = ['五', '五', '五', '四'];
         labels.forEach((label, i) => {
           const x = LAYOUT.hall.curtain - 50 + i * 36;
@@ -385,7 +401,8 @@ export class WorldScene extends Phaser.Scene {
       if (this.mode !== 'play') return;
       if (Math.abs(this.player.x - spot.x) <= spot.range) spot.use();
       else {
-        this.targetX = Phaser.Math.Clamp(spot.x, this.minX, this.maxX);
+        const beside = spot.x + (this.player.x < spot.x ? -90 : 90);
+        this.targetX = Phaser.Math.Clamp(beside, this.minX, this.maxX);
         this.pending = spot.id;
       }
     });
@@ -428,11 +445,11 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private renderDialog() {
+  private renderDialog(playSound = true) {
     this.dialogRoot?.destroy();
     const line = this.dialogLines[this.dialogIndex];
     if (!line) return;
-    if (line.sound) audio.play(line.sound);
+    if (playSound && line.sound) audio.play(line.sound);
     if (line.caption) this.caption(line.caption);
     const root = this.add.container(0, 0).setScrollFactor(0).setDepth(200);
     const box = this.add.rectangle(960, 960, 1880, 210, 0x140f0c, 0.9).setStrokeStyle(2, 0xd9c7a4).setScrollFactor(0).setInteractive();
@@ -441,22 +458,36 @@ export class WorldScene extends Phaser.Scene {
       this.advanceDialog();
     });
     const name = line.speaker === 'continuation' ? '续腔 · 身后，旧村一侧' : SPEAKER_NAME[line.speaker];
-    const showPortrait = Boolean(PORTRAIT[line.speaker]);
+    const portraitKey = `portrait-${line.speaker}`;
+    const paintedPortrait = this.textures.exists(portraitKey);
+    const showPortrait = paintedPortrait || Boolean(PORTRAIT[line.speaker]);
     const bits: Phaser.GameObjects.GameObject[] = [box];
     if (showPortrait) {
       const left = line.speaker === 'xiaoman';
       const px = left ? 150 : 1770;
-      const frame = this.add.rectangle(px, 680, 200, 280, 0x1b1612, 0.94).setStrokeStyle(2, 0xd9c7a4);
-      const bust = this.add.rectangle(px, 690, 150, 180, PORTRAIT[line.speaker] ?? 0x888888, 1);
-      const tag = this.add.text(px, 800, '开发占位', textStyle(18, '#d9c7a4')).setOrigin(0.5);
-      bits.push(frame, bust, tag);
+      const frame = this.add.rectangle(px, 680, 200, 280, 0x1b1612, 0.94).setStrokeStyle(2, 0xd9c7a4).setScrollFactor(0);
+      bits.push(frame);
+      if (paintedPortrait) {
+        const bust = this.add.image(px, 812, portraitKey).setOrigin(0.5, 1).setScrollFactor(0);
+        const aspect = bust.width / bust.height;
+        const maxW = 176;
+        const maxH = 248;
+        const width = aspect > maxW / maxH ? maxW : maxH * aspect;
+        const height = width / aspect;
+        bust.setDisplaySize(width, height);
+        bits.push(bust);
+      } else {
+        const bust = this.add.rectangle(px, 690, 150, 180, PORTRAIT[line.speaker] ?? 0x888888, 1).setScrollFactor(0);
+        const tag = this.add.text(px, 800, '开发占位', textStyle(18, '#d9c7a4')).setOrigin(0.5).setScrollFactor(0);
+        bits.push(bust, tag);
+      }
     }
     const who = this.add.text(80, 880, name, textStyle(24, '#d9c7a4'));
     const body = this.add.text(80, 920, line.text, textStyle(getSettings().largeText ? 36 : 30)).setWordWrapWidth(showPortrait ? 1500 : 1700, true);
     const hint = this.add.text(1680, 1040, this.dialogHidden ? '' : '点这里或空格继续', textStyle(20, '#cbbba6')).setOrigin(0.5);
     const hide = makeButton(this, 1760, 890, 180, 46, this.dialogHidden ? '显示对白' : '隐藏对白', () => {
       this.dialogHidden = !this.dialogHidden;
-      this.renderDialog();
+      this.renderDialog(false);
     });
     hide.root.setScrollFactor(0);
     bits.push(who, body, hint, hide.root);
@@ -557,7 +588,7 @@ export class WorldScene extends Phaser.Scene {
       this.commitAction({ type: 'finishHallIntro' });
     }
     if (this.alive && this.mode === 'script') this.mode = 'play';
-    if (this.alive && this.sceneId === 'CH1-01' && getState().pz01Done && !getState().roundAck) void this.roundEndPrompt();
+    if (this.alive && this.sceneId === 'CH1-01' && getState().pz01Done) this.syncProps();
     this.syncProps();
   }
 
@@ -601,15 +632,20 @@ export class WorldScene extends Phaser.Scene {
 
   private buildHall() {
     const L = LAYOUT.hall;
+    const after = () => getState().pz01Done;
     this.spots = [
       { id: 'out', x: L.door, range: 130, label: '回到村口', available: () => true, use: () => void this.go('PRO-02', LAYOUT.pro02.fromHall, -1) },
-      { id: 'photo', x: L.photo, range: 120, label: '看合照', available: () => getState().hallIntro, use: () => void this.usePhoto() },
-      { id: 'stool', x: L.stool, range: 120, label: '矮凳', available: () => getState().hallIntro, use: () => void this.useStool() },
-      { id: 'hook', x: L.hook, range: 120, label: '建军的高钩', available: () => getState().hallIntro, use: () => void this.usePlace('hook') },
-      { id: 'curtain', x: L.curtain, range: 130, label: '掀起帷角', available: () => getState().hallIntro, use: () => void this.liftCurtain() },
-      { id: 'hint', x: L.guifen, range: 120, label: '问桂芬', available: () => getState().clothsGiven, use: () => void this.clothHint() },
-      { id: 'guyu', x: L.guyu, range: 110, label: '谷雨', available: () => getState().hallIntro, use: () => void this.hallGuyu() },
-      { id: 'jianjun', x: L.jianjun, range: 120, label: '谷建军', available: () => getState().hallIntro, use: () => void this.hallJianjun() },
+      { id: 'lamp', x: L.door + 180, range: 110, label: '门廊的灯', available: after, use: () => void this.hallUi(runLamp) },
+      { id: 'book', x: L.stool - 70, range: 90, label: '作业本', available: after, use: () => void this.hallBook() },
+      { id: 'photo', x: L.photo, range: 110, label: '看合照', available: () => getState().hallIntro, use: () => void this.usePhoto() },
+      { id: 'body', x: L.photo + 90, range: 90, label: '看棺前', available: after, use: () => void this.hallUi(runBody) },
+      { id: 'stool', x: L.stool, range: 90, label: '矮凳', available: () => getState().hallIntro, use: () => void this.useStool() },
+      { id: 'gong', x: L.hook - 90, range: 80, label: '裹着的锣', available: after, use: () => void this.hallUi(runGong) },
+      { id: 'hook', x: L.hook, range: 90, label: '建军的高钩', available: () => getState().hallIntro, use: () => void this.usePlace('hook') },
+      { id: 'curtain', x: L.curtain, range: 120, label: '帷前', available: () => getState().hallIntro, use: () => void this.liftCurtain() },
+      { id: 'hint', x: L.guifen, range: 100, label: '问桂芬', available: () => getState().clothsGiven, use: () => void this.askHallGuifen() },
+      { id: 'guyu', x: L.guyu, range: 90, label: '谷雨', available: () => getState().hallIntro, use: () => void this.hallGuyu() },
+      { id: 'jianjun', x: L.jianjun, range: 100, label: '谷建军', available: () => getState().hallIntro, use: () => void this.hallJianjun() },
     ];
   }
 
@@ -971,8 +1007,13 @@ export class WorldScene extends Phaser.Scene {
   private async liftCurtain() {
     const s = getState();
     if (s.curtainLifted) {
-      await this.say([{ speaker: 'narration', text: '缝还留着。五把、五把、五把、四把，共十九条。一个名字都还没写上。' }]);
-      if (!getState().roundAck) await this.roundEndPrompt();
+      const pick = await this.choose('帷前', [
+        { id: 'cloth', label: '再看十九条旧布' },
+        { id: 'rite', label: s.pz02Done ? '重听唱过的' : '堂前起式' },
+        { id: 'back', label: '离开' },
+      ]);
+      if (pick === 'cloth') await this.say([{ speaker: 'narration', text: '缝还留着。五把、五把、五把、四把，共十九条。一个名字都还没写上。' }]);
+      if (pick === 'rite') await this.hallUi(runRite);
       return;
     }
     if (s.hookCloth !== 'long' || s.stoolCloth !== 'short') {
@@ -988,30 +1029,75 @@ export class WorldScene extends Phaser.Scene {
     this.syncProps();
     await this.say(LINES.curtain);
     if (!this.alive) return;
-    await this.roundEndPrompt();
+    await this.say([{ speaker: 'narration', text: '建军还在供桌边上。三夜怎么哭，过去听他自己说。' }]);
+    this.mode = 'play';
   }
 
-  private async roundEndPrompt() {
-    const pick = await this.choose('本轮开发内容结束', [
-      { id: 'stay', label: '留下查看' },
-      { id: 'title', label: '回到标题' },
-    ], '孝布已经按家里的位置放好。帷后是五、五、五、四，共十九条旧布。供桌委托和 PZ-02 起式初唱留到下一轮，没有记成完成。进度已保存，可以回岸边，也可以读档。');
-    this.commitAction({ type: 'ackRound' });
-    if (pick === 'title') this.scene.start('title');
-    else this.mode = 'play';
+  private hallTalk(): HallUi {
+    return {
+      say: (lines) => this.say(lines),
+      choose: (prompt, options, detail) => this.choose(prompt, options, detail),
+      showNote: (title, body) => this.showNote(title, body),
+      commit: (action) => this.commitAction(action),
+      alive: () => this.alive,
+      state: () => getState(),
+    };
+  }
+
+  private async hallUi(run: (ui: HallUi) => Promise<void>) {
+    this.mode = 'script';
+    await run(this.hallTalk());
+    if (this.alive && this.mode === 'script') this.mode = 'play';
+    this.syncProps();
+  }
+
+  private async hallBook() {
+    if (getState().l02) {
+      await this.say([{ speaker: 'narration', text: '本子还摊在原处。桂芬亲眼看见的那句已经记下，不用再问一遍才算数。' }]);
+      const pick = await this.choose('作业本', [
+        { id: 'again', label: '请桂芬再讲一遍' },
+        { id: 'back', label: '收回' },
+      ]);
+      if (pick === 'again') await this.hallUi(runTestimony);
+      return;
+    }
+    await this.hallUi(runBook);
+  }
+
+  private async askHallGuifen() {
+    if (!getState().pz01Done) {
+      await this.clothHint();
+      return;
+    }
+    const pick = await this.choose('邹桂芬', [
+      { id: 'cloth', label: '再问孝布' },
+      { id: 'saw', label: getState().l02 ? '再听她亲眼看见的' : '问她当时看见什么' },
+      { id: 'back', label: '离开' },
+    ]);
+    if (pick === 'cloth') await this.clothHint();
+    if (pick === 'saw') await this.hallUi(runTestimony);
   }
 
   private async hallGuyu() {
     const s = getState();
-    const text = s.pz01Done ? '留条缝，省得下回又挂在钉上。' : s.stoolSteadied ? '凳子归我管。布你放，我看着。' : '靠墙那条腿短。垫这边。';
+    const text = s.pz02Done
+      ? '本子我收好了。那两句你别拿到外头去。'
+      : s.bookSeen
+        ? '粉笔给我。最后那一点是我自己添的。'
+        : s.pz01Done
+          ? '留条缝，省得下回又挂在钉上。'
+          : s.stoolSteadied
+            ? '凳子归我管。布你放，我看着。'
+            : '靠墙那条腿短。垫这边。';
     await this.say([{ speaker: 'guyu', text }]);
   }
 
   private async hallJianjun() {
-    const text = getState().pz01Done
-      ? '余师傅，供桌前的事我还等着谈。这一段先停在布上，没有往下唱。'
-      : '人在供桌边上，掌根按着钥匙。三夜的事他还没开口。';
-    await this.say([{ speaker: 'jianjun', text }]);
+    if (getState().pz01Done) {
+      await this.hallUi(runCommission);
+      return;
+    }
+    await this.say([{ speaker: 'jianjun', text: '人在供桌边上，掌根按着钥匙。三夜的事他还没开口。' }]);
   }
 
   private async go(to: SceneId, x: number, facing: 1 | -1) {
@@ -1034,17 +1120,37 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private showNote(title: string, body: string) {
+    const pages = paginateNote(body);
     return new Promise<void>((resolve) => {
+      let index = 0;
       this.mode = 'panel';
       const root = this.add.container(0, 0).setScrollFactor(0).setDepth(220);
       const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.35).setScrollFactor(0).setInteractive();
-      const card = this.add.rectangle(430, 420, 700, 520, 0x241c16, 0.96).setStrokeStyle(2, 0xd9c7a4);
-      const heading = this.add.text(140, 200, title, textStyle(32, '#d9c7a4'));
-      const copy = this.add.text(140, 270, body, textStyle(28)).setWordWrapWidth(580, true);
-      const close = makeButton(this, 430, 620, 220, 56, '收回', () => this.closePanel());
+      const card = this.add.rectangle(430, 420, 700, 560, 0x241c16, 0.96).setStrokeStyle(2, 0xd9c7a4);
+      const heading = this.add.text(140, 180, title, textStyle(32, '#d9c7a4'));
+      const copy = this.add.text(140, 250, '', textStyle(26)).setWordWrapWidth(580, true);
+      const pageLabel = this.add.text(430, 560, '', textStyle(20, '#cbbba6')).setOrigin(0.5);
+      const paint = () => {
+        copy.setText(pages[index] ?? '');
+        pageLabel.setText(pages.length > 1 ? `${index + 1} / ${pages.length}` : '');
+      };
+      paint();
+      const close = makeButton(this, 430, 640, 200, 52, '收回', () => this.closePanel());
+      const buttons = [close];
+      if (pages.length > 1) {
+        buttons.unshift(makeButton(this, 230, 640, 160, 52, '上一页', () => {
+          index = Math.max(0, index - 1);
+          paint();
+        }));
+        buttons.push(makeButton(this, 630, 640, 160, 52, '下一页', () => {
+          index = Math.min(pages.length - 1, index + 1);
+          paint();
+        }));
+      }
       this.panelResolve = resolve;
-      close.root.setScrollFactor(0);
-      root.add([dim, card, heading, copy, close.root]);
+      buttons.forEach((b) => b.root.setScrollFactor(0));
+      root.add([dim, card, heading, copy, pageLabel]);
+      buttons.forEach((b) => root.add(b.root));
       this.panelRoot = root;
       dim.on('pointerdown', (pointer: Phaser.Input.Pointer) => pointer.event?.stopPropagation?.());
     });
@@ -1066,7 +1172,7 @@ export class WorldScene extends Phaser.Scene {
     const evidence = s.evidence.length ? s.evidence.map((id) => `【${EVIDENCE[id]?.title ?? id}】\n${EVIDENCE[id]?.body ?? ''}`).join('\n\n') : '还没有文书。';
     const names = s.named.length ? s.named.join('、') : '名册是空的。听见的音先记在观察里，没有归到谁身上。';
     const sent = s.sent.length ? `已送 ${s.sent.length}` : '还没有送别。';
-    void this.showNote('哭本', `观察\n${notes}\n\n证据\n${evidence}\n\n姓名\n${names}\n${sent}\nPZ-02 未完成。`);
+    void this.showNote('哭本', `观察\n${notes}\n\n证据\n${evidence}\n\n姓名\n${names}\n${sent}\n\n${journalStatus(s)}`);
   }
 
   private openPause() {
@@ -1090,11 +1196,11 @@ export class WorldScene extends Phaser.Scene {
     const size = makeButton(this, 1160, 640, 200, 56, '字号', () => this.tweakSetting('largeText', paint));
     const motion = makeButton(this, 960, 720, 280, 56, '减少动态', () => this.tweakSetting('reduceMotion', paint));
     const titleBtn = makeButton(this, 960, 800, 320, 56, '回到标题', () => this.scene.start('title'));
+    root.add([dim, card, title, info]);
     [resume, quieter, louder, sub, size, motion, titleBtn].forEach((b) => {
       b.root.setScrollFactor(0);
       root.add(b.root);
     });
-    root.add([dim, card, title, info]);
     this.panelRoot = root;
     dim.on('pointerdown', (pointer: Phaser.Input.Pointer) => pointer.event?.stopPropagation?.());
   }
@@ -1120,4 +1226,27 @@ export class WorldScene extends Phaser.Scene {
     this.panelResolve = null;
     resolve?.();
   }
+}
+
+function paginateNote(body: string): string[] {
+  const pieces: string[] = [];
+  for (const chunk of body.split('\n\n')) {
+    let rest = chunk.trim();
+    while (rest.length > 90) {
+      pieces.push(rest.slice(0, 90));
+      rest = rest.slice(90).trim();
+    }
+    if (rest) pieces.push(rest);
+  }
+  const pages: string[] = [];
+  let current = '';
+  for (const piece of pieces) {
+    const next = current ? `${current}\n\n${piece}` : piece;
+    if (next.length > 90 && current) {
+      pages.push(current);
+      current = piece;
+    } else current = next;
+  }
+  if (current) pages.push(current);
+  return pages.length ? pages : [''];
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { apply, newGame, serialize, deserialize, travelBlock, type Action, type GameState } from '../src/core/state.ts';
+import { apply, deserialize, journalStatus, newGame, serialize, travelBlock, type Action, type GameState } from '../src/core/state.ts';
 
 function step(state: GameState, action: Action) {
   const next = apply(state, action);
@@ -129,4 +129,103 @@ test('没唱完不能进村，名册不会因为听见两个音而写入', () =>
   assert.equal(s.named.length, 0);
   assert.ok(s.notes.includes('HEARD'));
   assert.equal(travelBlock(s, 'PRO-02'), 'song');
+});
+
+function hallReady(choice: 'drink' | 'pour') {
+  let s = shore(choice);
+  s = step(s, { type: 'finishHallIntro' });
+  s = step(s, { type: 'steadyStool' });
+  s = step(s, { type: 'receiveCloths' });
+  s = step(s, { type: 'placeCloth', cloth: 'short', target: 'stool' });
+  s = step(s, { type: 'placeCloth', cloth: 'long', target: 'hook' });
+  s = step(s, { type: 'liftCurtain' });
+  return s;
+}
+
+test('旧的孝布存档能接着取证，猜中扶笔也不能跳过桂芬', () => {
+  const finished = hallReady('drink');
+  const raw = JSON.parse(serialize(finished)) as Record<string, unknown>;
+  delete raw.commissionDone;
+  delete raw.bookSeen;
+  delete raw.l02;
+  delete raw.addressSung;
+  delete raw.lampTaken;
+  delete raw.pz02Done;
+  const old = deserialize(JSON.stringify(raw));
+  assert.equal(old.pz01Done, true);
+  assert.equal(old.pz02Done, false);
+  assert.equal(journalStatus(old).includes('还没完成'), true);
+  fail(old, { type: 'singAddress' }, 'need-commission');
+
+  let s = step(old, { type: 'acceptCommission' });
+  assert.equal(s.letterKnown, false);
+  assert.ok(s.evidence.includes('E10'));
+  const commission = apply(s, { type: 'acceptCommission' });
+  assert.equal(commission.result.repeat, true);
+  assert.equal(s.evidence.filter((id) => id === 'E10').length, 1);
+
+  s = step(s, { type: 'seeBook' });
+  assert.equal(s.l02, false);
+  assert.ok(s.notes.includes('BOOK'));
+  s = step(s, { type: 'singAddress' });
+  s = fail(s, { type: 'confirmVerse', card: 'l02' }, 'need-l02');
+  assert.equal(s.pz02Done, false);
+  s = fail(s, { type: 'confirmVerse', card: 'boat' }, 'wrong-boat');
+  s = fail(s, { type: 'confirmVerse', card: 'tea' }, 'wrong-tea');
+  assert.equal(s.drankOathWater, true);
+  assert.equal(s.oathEffect, 'suppressed');
+  assert.equal(s.l02, false);
+
+  s = step(s, { type: 'hearL02' });
+  const heard = apply(s, { type: 'hearL02' });
+  assert.equal(heard.result.repeat, true);
+  assert.equal(s.notes.filter((id) => id === 'L02').length, 1);
+  s = step(s, { type: 'confirmVerse', card: 'l02' });
+  assert.equal(s.pz02Done, true);
+  assert.equal(s.steps.includes('PZ-02.address'), true);
+  assert.equal(s.steps.includes('PZ-02.done'), true);
+  assert.deepEqual(s.named, []);
+  assert.deepEqual(s.sent, []);
+  assert.deepEqual(s.seenEcho, []);
+  assert.equal(s.birthKnown, false);
+  assert.equal(s.tallyRead, false);
+  const again = apply(s, { type: 'confirmVerse', card: 'l02' });
+  assert.equal(again.result.repeat, true);
+  assert.equal(s.notes.filter((id) => id === 'PZ02').length, 1);
+
+  s = step(s, { type: 'takeLamp' });
+  const lamp = apply(s, { type: 'takeLamp' });
+  assert.equal(lamp.result.repeat, true);
+  assert.equal(s.inventory.filter((id) => id === 'LAMP').length, 1);
+  const kept = deserialize(serialize(s));
+  assert.equal(kept.pz02Done, true);
+  assert.equal(kept.lampTaken, true);
+  assert.equal(kept.l02, true);
+  assert.equal(kept.addressSung, true);
+  assert.equal(kept.letterKnown, false);
+  assert.deepEqual(kept.named, []);
+  assert.equal(journalStatus(kept).includes('灯已借到'), true);
+});
+
+test('倒茶也能唱完，误选之后仍可用同一条证词', () => {
+  let s = hallReady('pour');
+  assert.equal(s.oathEffect, 'clear');
+  s = step(s, { type: 'acceptCommission' });
+  s = step(s, { type: 'hearL02' });
+  s = step(s, { type: 'singAddress' });
+  const tea = s.drankOathWater;
+  s = fail(s, { type: 'confirmVerse', card: 'boat' }, 'wrong-boat');
+  s = fail(s, { type: 'confirmVerse', card: 'tea' }, 'wrong-tea');
+  assert.equal(s.drankOathWater, tea);
+  assert.equal(s.pz02Done, false);
+  s = step(s, { type: 'confirmVerse', card: 'l02' });
+  assert.equal(s.pz02Done, true);
+  assert.equal(s.oathEffect, 'clear');
+  s = step(s, { type: 'seeTally' });
+  assert.equal(s.sawTally, true);
+  assert.equal(s.tallyRead, false);
+  const loaded = deserialize(serialize(s));
+  assert.equal(loaded.sawTally, true);
+  assert.equal(loaded.tallyRead, false);
+  assert.equal(loaded.pz02Done, true);
 });

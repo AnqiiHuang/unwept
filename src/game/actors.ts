@@ -61,7 +61,7 @@ function drawGuyu(g: Phaser.GameObjects.Graphics) {
   g.fillStyle(0x111, 1);
   g.fillEllipse(-8, -10, 18, 8);
   g.fillEllipse(10, -10, 18, 8);
-  g.fillStyle(0xc4b09a, 1);
+  g.fillStyle(0x8d4034, 1);
   g.fillRoundedRect(-22, -118, 44, 64, 8);
   g.fillStyle(0xf2d3b8, 1);
   g.fillCircle(8, -138, 15);
@@ -78,9 +78,9 @@ function drawGuifen(g: Phaser.GameObjects.Graphics) {
   g.fillStyle(0x3a332e, 1);
   g.fillRoundedRect(-16, -84, 14, 70, 4);
   g.fillRoundedRect(4, -84, 14, 70, 4);
-  g.fillStyle(0x8d6f66, 1);
+  g.fillStyle(0x6d7278, 1);
   g.fillRoundedRect(-30, -170, 60, 94, 8);
-  g.fillStyle(0xd7d1c8, 0.9);
+  g.fillStyle(0xc2b6a4, 0.95);
   g.fillRoundedRect(-22, -150, 44, 50, 4);
   g.fillStyle(0xf0d0b4, 1);
   g.fillCircle(8, -196, 18);
@@ -116,21 +116,72 @@ const DRAW: Record<ActorKind, (g: Phaser.GameObjects.Graphics) => void> = {
   jianjun: drawJianjun,
 };
 
+const SCENE_HEIGHT: Record<ActorKind, number> = {
+  xiaoman: 360,
+  guyu: 274,
+  changgui: 360,
+  guifen: 360,
+  jianjun: 360,
+};
+
+function fitHeight(sprite: Phaser.GameObjects.Image, height: number) {
+  const source = sprite.texture.getSourceImage() as { width: number; height: number };
+  const aspect = source.width / source.height;
+  sprite.setDisplaySize(height * aspect, height);
+}
+
 export function createActor(scene: Phaser.Scene, kind: ActorKind) {
   const root = scene.add.container(0, 0);
-  const body = scene.add.graphics();
-  DRAW[kind](body);
+  const height = SCENE_HEIGHT[kind];
+  const key = kind === 'xiaoman' ? 'scene-xiaoman-1' : `scene-${kind}`;
+  if (scene.textures.exists(key)) {
+    const sprite = scene.add.image(0, 0, key).setOrigin(0.5, 1);
+    fitHeight(sprite, height);
+    const shadowW = Math.max(46, sprite.displayWidth * 0.42);
+    const shadow = scene.add.ellipse(0, -6, shadowW, 16, 0x241c16, 0.35);
+    root.add([shadow, sprite]);
+    root.setData('sprite', sprite);
+    root.setData('bodyHeight', height);
+    if (kind === 'xiaoman') {
+      root.setData('frames', ['scene-xiaoman-1', 'scene-xiaoman-2', 'scene-xiaoman-3']);
+      root.setData('bowlKey', 'scene-xiaoman-bowl');
+    }
+  } else {
+    const body = scene.add.graphics();
+    DRAW[kind](body);
+    root.add(body);
+  }
   const bowl = scene.add.graphics();
   drawBowl(bowl);
   bowl.setVisible(false);
-  root.add([body, bowl]);
+  root.add(bowl);
   root.setData('bowl', bowl);
   root.setData('kind', kind);
-  if (kind === 'guyu') root.setScale(0.82, 0.82);
   return root;
 }
 
 export function setBowl(actor: Phaser.GameObjects.Container, on: boolean) {
+  actor.setData('bowlOn', on);
+  syncActor(actor, false, 0, false);
+}
+
+export function syncActor(actor: Phaser.GameObjects.Container, moving: boolean, time: number, bowlHigh: boolean) {
+  const sprite = actor.getData('sprite') as Phaser.GameObjects.Image | undefined;
   const bowl = actor.getData('bowl') as Phaser.GameObjects.Graphics | undefined;
-  bowl?.setVisible(on);
+  const bowlOn = Boolean(actor.getData('bowlOn'));
+  const frames = actor.getData('frames') as string[] | undefined;
+  const bowlKey = actor.getData('bowlKey') as string | undefined;
+  const height = (actor.getData('bodyHeight') as number | undefined) ?? 360;
+  const showPaintedBowl = Boolean(bowlOn && !moving && bowlKey && sprite);
+  if (sprite && frames?.length) {
+    const key = showPaintedBowl ? bowlKey! : moving ? frames[1 + (Math.floor(time / 180) % (frames.length - 1))] : frames[0];
+    if (sprite.texture.key !== key) {
+      sprite.setTexture(key);
+      fitHeight(sprite, height);
+    }
+  }
+  if (!bowl) return;
+  bowl.setVisible(bowlOn && !showPaintedBowl);
+  bowl.setPosition(34, bowlHigh ? -height * 0.62 : -height * 0.55);
+  bowl.setScale(height / 300);
 }

@@ -12,6 +12,12 @@ export class BootScene extends Phaser.Scene {
     this.load.image('plate-room', roomUrl);
     this.load.image('plate-shore', shoreUrl);
     this.load.image('plate-gate', gateUrl);
+    const base = import.meta.env.BASE_URL;
+    const scene = ['xiaoman-1', 'xiaoman-2', 'xiaoman-3', 'xiaoman-bowl', 'guyu', 'guifen', 'changgui', 'jianjun'];
+    scene.forEach((name) => this.load.image(`scene-${name}`, `${base}characters/scene/${name}.png`));
+    ['xiaoman', 'guyu', 'guifen', 'changgui', 'jianjun'].forEach((name) => {
+      this.load.image(`portrait-${name}`, `${base}characters/portrait/${name}.png`);
+    });
   }
 
   create() {
