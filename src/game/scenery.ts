@@ -136,6 +136,39 @@ export function paintHall(scene: Phaser.Scene) {
   }).setScrollFactor(0).setDepth(50);
 }
 
+export function paintStreet(scene: Phaser.Scene) {
+  const w = LAYOUT.street.world;
+  const g = scene.add.graphics().setDepth(0);
+  g.fillStyle(0x1b2230, 1);
+  g.fillRect(0, 0, w, 1080);
+  g.fillStyle(0x2a3138, 1);
+  g.fillRect(0, 430, w, 330);
+  g.fillStyle(0x3a342c, 1);
+  g.fillRect(0, 740, w, 340);
+  const houses = scene.add.graphics().setDepth(4);
+  houses.fillStyle(0x4a4038, 1);
+  houses.fillRect(700, 300, 520, 460);
+  houses.fillStyle(0x6a2a22, 0.9);
+  houses.fillRect(860, 560, 150, 180);
+  houses.fillStyle(0x3e4650, 1);
+  houses.fillRect(1760, 280, 980, 480);
+  houses.fillStyle(0xc9d4de, 0.35);
+  houses.fillRect(1880, 390, 280, 220);
+  houses.fillRect(2480, 390, 220, 220);
+  houses.fillStyle(0x5c4634, 1);
+  houses.fillRect(2920, 470, 70, 16);
+  houses.fillRect(2936, 430, 36, 18);
+  houses.fillStyle(0x6a5844, 1);
+  houses.fillRect(1180, 250, 8, 160);
+  houses.fillCircle(1184, 250, 10);
+  scene.add.text(24, 24, '开发占位 · 新坳街　灶门、窗左、床头画在同一条路上，不是正式背景', {
+    fontFamily: '"Songti SC", serif',
+    fontSize: '22px',
+    color: '#f0e6d6',
+    backgroundColor: '#00000066',
+  }).setScrollFactor(0).setDepth(50);
+}
+
 function reeds(g: Phaser.GameObjects.Graphics, x: number, color: number) {
   for (let i = 0; i < 16; i++) {
     const px = x + i * 16;

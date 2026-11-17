@@ -39,5 +39,16 @@ export const LAYOUT = {
     curtain: 3000,
     jianjun: 2860,
     spawn: 760,
+    street: 3160,
+  },
+  street: {
+    world: 4600,
+    minX: 280,
+    maxX: 4200,
+    fromHall: 640,
+    stove: 980,
+    window: 2100,
+    bed: 3200,
+    end: 4080,
   },
 } as const;

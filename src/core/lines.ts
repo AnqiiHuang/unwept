@@ -13,7 +13,9 @@ export type SoundId =
   | 'cloth'
   | 'key'
   | 'wick'
-  | 'cry';
+  | 'cry'
+  | 'crackle'
+  | 'bucket';
 
 export interface Line {
   speaker: Speaker;
@@ -94,6 +96,34 @@ export const NOTES: Record<string, { title: string; body: string }> = {
   PZ02: {
     title: '有据的一句',
     body: '桂芬亲见怀山扶孙女握粉笔。堂前只叫了谷老爹。灯芯合成一股，碗里的细纹还在。',
+  },
+  A_OBS: {
+    title: '灶门',
+    body: '木柴爆了两下就断。右侧的哭腔比这一下长。只记下两种长短，还不知道声音从哪里来。',
+  },
+  SHOE: {
+    title: '门边的草鞋',
+    body: '鞋尖都朝里，鞋底已经干了。寻常人家收着的鞋。',
+  },
+  B_OBS: {
+    title: '窗左的呼吸',
+    body: '被角起、落、再起。哭腔中间没有换气。两个人都睡着，嘴是闭的。',
+  },
+  C_EDGE: {
+    title: '床头的亮边',
+    body: '同一扇窗靠床头的一端，有一线水亮，光被木棂截成两截。第一眼只看见亮边。',
+  },
+  C_BOWL: {
+    title: '床头凳',
+    body: '再看同一窗格，木凳上有一只普通饭碗。人躺着没挪。响的地方比枕头高一点。还没有指认。',
+  },
+  C_RIPPLE: {
+    title: '窗后的水纹',
+    body: '把自己的碗拿到背后，窗后那一圈水纹仍和哭腔一起起。被角随后才落。',
+  },
+  PZ03: {
+    title: '窗源',
+    body: '新坳街。床上的人没有哭，哭声来自床头碗。',
   },
 };
 
@@ -293,4 +323,6 @@ export const TRAVEL_HINT: Record<string, string> = {
   e23: '告示还没读。桂芬把围裙揭开了一点。',
   tea: '茶还端在手里。喝一口，或倒在门槛外，两条路都进得了门。',
   path: '这边现在走不过去。',
+  pz02: '街窗外有哭声。堂前和帷后还没唱完，先别出门。',
+  lamp: '门廊的灯还挂在原处。跟桂芬借了再去街窗。',
 };

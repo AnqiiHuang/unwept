@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { apply, deserialize, journalStatus, newGame, serialize, travelBlock, type Action, type GameState } from '../src/core/state.ts';
+import { apply, canAccuse, deserialize, journalStatus, newGame, serialize, travelBlock, type Action, type GameState } from '../src/core/state.ts';
 
 function step(state: GameState, action: Action) {
   const next = apply(state, action);
@@ -228,4 +228,92 @@ test('倒茶也能唱完，误选之后仍可用同一条证词', () => {
   assert.equal(loaded.sawTally, true);
   assert.equal(loaded.tallyRead, false);
   assert.equal(loaded.pz02Done, true);
+});
+
+function withLamp(choice: 'drink' | 'pour' = 'drink') {
+  let s = hallReady(choice);
+  s = step(s, { type: 'acceptCommission' });
+  s = step(s, { type: 'hearL02' });
+  s = step(s, { type: 'singAddress' });
+  s = step(s, { type: 'confirmVerse', card: 'l02' });
+  s = step(s, { type: 'takeLamp' });
+  return s;
+}
+
+test('没借灯不能进街窗，灯已借到的旧档可以接着比', () => {
+  let early = hallReady('drink');
+  assert.equal(travelBlock(early, 'CH1-03'), 'pz02');
+  early = step(early, { type: 'acceptCommission' });
+  early = step(early, { type: 'hearL02' });
+  early = step(early, { type: 'singAddress' });
+  early = step(early, { type: 'confirmVerse', card: 'l02' });
+  assert.equal(travelBlock(early, 'CH1-03'), 'lamp');
+  const lamp = withLamp('pour');
+  assert.equal(lamp.oathEffect, 'clear');
+  assert.equal(travelBlock(lamp, 'CH1-03'), null);
+  const raw = JSON.parse(serialize(lamp)) as Record<string, unknown>;
+  for (const key of ['streetIntro', 'aCompared', 'bBreath', 'cEdge', 'cBowl', 'cRipple', 'pz03Done', 'demoEnded']) delete raw[key];
+  const old = deserialize(JSON.stringify(raw));
+  assert.equal(old.lampTaken, true);
+  assert.equal(old.pz03Done, false);
+  assert.equal(old.aCompared, false);
+  assert.equal(travelBlock(old, 'CH1-03'), null);
+  assert.equal(old.drankOathWater, false);
+});
+
+test('不同顺序都能指认，证据不够和两种误选都不会结算', () => {
+  let fromC = step(withLamp(), { type: 'travel', to: 'CH1-03', x: 640, facing: 1 });
+  fromC = step(fromC, { type: 'enterStreet' });
+  fromC = fail(fromC, { type: 'accuse', which: 'bowl' }, 'need-compare');
+  fromC = step(fromC, { type: 'glanceEdge' });
+  assert.equal(fromC.notes.includes('PZ03'), false);
+  fromC = fail(fromC, { type: 'accuse', which: 'bowl' }, 'need-compare');
+  fromC = step(fromC, { type: 'lookPane' });
+  fromC = step(fromC, { type: 'compareA' });
+  fromC = step(fromC, { type: 'confirmRipple' });
+  assert.equal(canAccuse(fromC), false);
+  fromC = step(fromC, { type: 'compareBreath' });
+  assert.equal(canAccuse(fromC), true);
+  const oath = fromC.oathEffect;
+  fromC = fail(fromC, { type: 'accuse', which: 'wood' }, 'wrong-wood');
+  fromC = fail(fromC, { type: 'accuse', which: 'person' }, 'wrong-person');
+  assert.equal(fromC.aCompared, true);
+  assert.equal(fromC.bBreath, true);
+  assert.equal(fromC.cRipple, true);
+  assert.equal(fromC.pz03Done, false);
+  assert.equal(fromC.notes.includes('PZ03'), false);
+  fromC = step(fromC, { type: 'accuse', which: 'bowl' });
+  assert.equal(fromC.notes.filter((id) => id === 'PZ03').length, 1);
+  assert.equal(fromC.oathEffect, oath);
+  assert.deepEqual(fromC.named, []);
+  assert.equal(fromC.letterKnown, false);
+  assert.equal(fromC.birthKnown, false);
+  const again = apply(fromC, { type: 'accuse', which: 'bowl' });
+  assert.equal(again.result.repeat, true);
+
+  let fromB = step(withLamp('pour'), { type: 'travel', to: 'CH1-03', x: 980, facing: 1 });
+  fromB = step(fromB, { type: 'enterStreet' });
+  fromB = step(fromB, { type: 'lowerLamp' });
+  fromB = step(fromB, { type: 'compareBreath' });
+  fromB = step(fromB, { type: 'glanceEdge' });
+  fromB = step(fromB, { type: 'lookPane' });
+  assert.equal(canAccuse(fromB), false);
+  fromB = step(fromB, { type: 'confirmRipple' });
+  assert.equal(fromB.aCompared, false);
+  assert.equal(canAccuse(fromB), true);
+  const mid = deserialize(serialize(fromB));
+  assert.equal(mid.cRipple, true);
+  assert.equal(mid.pz03Done, false);
+  assert.equal(mid.oathEffect, 'clear');
+  fromB = step(mid, { type: 'accuse', which: 'bowl' });
+  fromB = step(fromB, { type: 'finishDemo' });
+  const ended = deserialize(serialize(fromB));
+  assert.equal(ended.demoEnded, true);
+  assert.equal(ended.scene, 'CH1-03');
+  assert.equal(journalStatus(ended).includes('试玩结束'), true);
+  const replay = apply(ended, { type: 'finishDemo' });
+  assert.equal(replay.result.repeat, true);
+  assert.equal(ended.notes.filter((id) => id === 'PZ03').length, 1);
+  assert.equal(ended.notes.includes('L04'), false);
+  assert.equal(ended.steps.filter((id) => id === 'CH1-03.end').length, 1);
 });

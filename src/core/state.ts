@@ -3,7 +3,7 @@ export const SAVE_KEY = 'unwept-save-v1';
 export const SAVE_BAK_KEY = 'unwept-save-v1-bak';
 export const SETTINGS_KEY = 'unwept-settings-v1';
 
-export type SceneId = 'PRO-01' | 'PRO-02' | 'CH1-01';
+export type SceneId = 'PRO-01' | 'PRO-02' | 'CH1-01' | 'CH1-03';
 export type ClothId = 'long' | 'short';
 export type OathEffect = 'clear' | 'suppressed';
 
@@ -62,6 +62,17 @@ export interface GameState {
   e10Read: boolean;
   lipSeen: boolean;
   gongSeen: boolean;
+  streetIntro: boolean;
+  aCompared: boolean;
+  shoesSeen: boolean;
+  bLampLow: boolean;
+  bBreath: boolean;
+  bKnocked: boolean;
+  cEdge: boolean;
+  cBowl: boolean;
+  cRipple: boolean;
+  pz03Done: boolean;
+  demoEnded: boolean;
   named: string[];
   sent: string[];
   seenEcho: string[];
@@ -118,6 +129,17 @@ export type Action =
   | { type: 'singAddress' }
   | { type: 'confirmVerse'; card: 'l02' | 'boat' | 'tea' }
   | { type: 'takeLamp' }
+  | { type: 'enterStreet' }
+  | { type: 'compareA' }
+  | { type: 'seeShoes' }
+  | { type: 'lowerLamp' }
+  | { type: 'compareBreath' }
+  | { type: 'knockWindow' }
+  | { type: 'glanceEdge' }
+  | { type: 'lookPane' }
+  | { type: 'confirmRipple' }
+  | { type: 'accuse'; which: 'wood' | 'person' | 'bowl' }
+  | { type: 'finishDemo' }
   | { type: 'travel'; to: SceneId; x: number; facing: 1 | -1 }
   | { type: 'move'; x: number; facing: 1 | -1 };
 
@@ -194,6 +216,17 @@ export function newGame(): GameState {
     e10Read: false,
     lipSeen: false,
     gongSeen: false,
+    streetIntro: false,
+    aCompared: false,
+    shoesSeen: false,
+    bLampLow: false,
+    bBreath: false,
+    bKnocked: false,
+    cEdge: false,
+    cBowl: false,
+    cRipple: false,
+    pz03Done: false,
+    demoEnded: false,
     pz02Done: false,
     sawTally: false,
     named: [],
@@ -252,7 +285,26 @@ export function travelBlock(s: GameState, to: SceneId): string | null {
     return null;
   }
   if (s.scene === 'CH1-01' && to === 'PRO-02') return null;
+  if (s.scene === 'CH1-01' && to === 'CH1-03') {
+    if (!s.pz02Done) return 'pz02';
+    if (!s.lampTaken) return 'lamp';
+    return null;
+  }
+  if (s.scene === 'CH1-03' && to === 'CH1-01') return null;
   return 'path';
+}
+
+export function canAccuse(s: GameState): boolean {
+  return s.cBowl && s.bBreath && s.cRipple && (s.aCompared || s.bBreath);
+}
+
+export function compareGap(s: GameState): string {
+  if (!s.cEdge && !s.cBowl) return '床头那一格还没看。第一次只会看见被木棂截开的亮边。';
+  if (!s.cBowl) return '同一扇窗再看一次。现在只看见亮边。';
+  if (!s.aCompared && !s.bBreath) return '还缺一处对照。可去灶门，或在这里再看窗左。';
+  if (!s.bBreath) return '还缺呼吸和哭腔的对照。可以再看被角。';
+  if (!s.cRipple) return '还缺窗后水纹和哭腔的对照。把自己的碗拿远，再看那一圈。';
+  return '';
 }
 
 export function apply(input: GameState, action: Action): { state: GameState; result: ApplyResult } {
@@ -493,6 +545,78 @@ export function apply(input: GameState, action: Action): { state: GameState; res
       pushOnce(s.inventory, 'LAMP');
       pushOnce(s.steps, 'CH1.lamp');
       return done(s, 'lamp');
+    case 'enterStreet':
+      if (!s.lampTaken) return blocked(input, 'need-lamp');
+      if (s.streetIntro) return done(input, 'street', true);
+      s.streetIntro = true;
+      pushOnce(s.steps, 'CH1-03.enter');
+      return done(s, 'street');
+    case 'compareA':
+      if (!s.streetIntro) return blocked(input, 'need-street');
+      if (s.aCompared) return done(input, 'a', true);
+      s.aCompared = true;
+      pushOnce(s.notes, 'A_OBS');
+      pushOnce(s.steps, 'PZ-03.A');
+      return done(s, 'a');
+    case 'seeShoes':
+      if (!s.streetIntro) return blocked(input, 'need-street');
+      if (s.shoesSeen) return done(input, 'shoes', true);
+      s.shoesSeen = true;
+      pushOnce(s.notes, 'SHOE');
+      return done(s, 'shoes');
+    case 'lowerLamp':
+      if (!s.streetIntro) return blocked(input, 'need-street');
+      if (s.bLampLow) return done(input, 'lamp-low', true);
+      s.bLampLow = true;
+      return done(s, 'lamp-low');
+    case 'compareBreath':
+      if (!s.streetIntro) return blocked(input, 'need-street');
+      if (!s.bLampLow && !s.cBowl && !s.cEdge) return blocked(input, 'need-view');
+      if (s.bBreath) return done(input, 'breath', true);
+      s.bBreath = true;
+      pushOnce(s.notes, 'B_OBS');
+      pushOnce(s.steps, 'PZ-03.B');
+      return done(s, 'breath');
+    case 'knockWindow':
+      if (!s.bLampLow) return blocked(input, 'need-lamp-low');
+      if (s.bKnocked) return done(input, 'knock', true);
+      s.bKnocked = true;
+      return done(s, 'knock');
+    case 'glanceEdge':
+      if (!s.streetIntro) return blocked(input, 'need-street');
+      if (s.cEdge || s.cBowl) return done(input, 'edge', true);
+      s.cEdge = true;
+      pushOnce(s.notes, 'C_EDGE');
+      return done(s, 'edge');
+    case 'lookPane':
+      if (!s.cEdge) return blocked(input, 'need-edge');
+      if (s.cBowl) return done(input, 'pane', true);
+      s.cBowl = true;
+      pushOnce(s.notes, 'C_BOWL');
+      pushOnce(s.steps, 'PZ-03.C');
+      return done(s, 'pane');
+    case 'confirmRipple':
+      if (!s.cBowl) return blocked(input, 'need-pane');
+      if (s.cRipple) return done(input, 'ripple', true);
+      s.cRipple = true;
+      pushOnce(s.notes, 'C_RIPPLE');
+      return done(s, 'ripple');
+    case 'accuse': {
+      if (!canAccuse(s)) return blocked(input, 'need-compare');
+      if (action.which === 'wood') return blocked(input, 'wrong-wood');
+      if (action.which === 'person') return blocked(input, 'wrong-person');
+      if (s.pz03Done) return done(input, 'pz03', true);
+      s.pz03Done = true;
+      pushOnce(s.notes, 'PZ03');
+      pushOnce(s.steps, 'PZ-03.done');
+      return done(s, 'pz03');
+    }
+    case 'finishDemo':
+      if (!s.pz03Done) return blocked(input, 'need-pz03');
+      if (s.demoEnded) return done(input, 'demo', true);
+      s.demoEnded = true;
+      pushOnce(s.steps, 'CH1-03.end');
+      return done(s, 'demo');
     case 'travel': {
       const block = travelBlock(s, action.to);
       if (block) return blocked(input, block);
@@ -507,8 +631,14 @@ export function apply(input: GameState, action: Action): { state: GameState; res
 }
 
 export function objective(s: GameState): string {
+  if (s.scene === 'CH1-03') {
+    if (s.demoEnded) return '试玩已经结束。可以重看窗前，或回到标题。桶声在街尽头外面。';
+    if (s.pz03Done) return '退半步，或在床头选「放下手」。';
+    if (canAccuse(s)) return '可以指出哭声从哪里来。翻看观察不算选定。';
+    return '灶门、窗左、床头都在这条街上，来回看就行。指出之前还要对过呼吸和水纹。';
+  }
   if (s.scene === 'CH1-01' && s.pz01Done) {
-    if (s.lampTaken) return '灯已经在手里。下一步是出门看街窗。这一轮先停在门廊。';
+    if (s.lampTaken) return '灯在手里。门廊右边可以去街窗。';
     if (s.pz02Done) return '街外有人哭。去跟桂芬借门廊的灯。';
     if (s.addressSung && !s.l02) return '堂前已经叫过谷老爹。要唱的那句，还得听桂芬亲眼看见的事。';
     if (s.addressSung) return '到帷后。先翻记录，再按「唱这一句」。翻看不算唱错。';
@@ -538,6 +668,9 @@ export function objective(s: GameState): string {
 
 export function progressLabel(s: GameState): string {
   if (!s.openingDone) return '开场还没看完';
+  if (s.demoEnded) return '新坳街 · 试玩结束';
+  if (s.pz03Done) return '新坳街 · 窗源已指';
+  if (s.scene === 'CH1-03') return '新坳街';
   if (s.lampTaken) return '谷家灵堂 · 灯已借到';
   if (s.pz02Done) return '谷家灵堂 · 起式已唱';
   if (s.addressSung) return '谷家灵堂 · 堂前已起';
@@ -576,7 +709,7 @@ export function deserialize(raw: string): GameState {
   if (rec.version !== SAVE_VERSION) {
     throw new Error('这份存档的版本当前读不懂，原档还留着，没有改成新游戏。');
   }
-  if (rec.scene !== 'PRO-01' && rec.scene !== 'PRO-02' && rec.scene !== 'CH1-01') {
+  if (rec.scene !== 'PRO-01' && rec.scene !== 'PRO-02' && rec.scene !== 'CH1-01' && rec.scene !== 'CH1-03') {
     throw new Error('这份存档的场景读不懂，原档还留着。');
   }
   const base = newGame();
@@ -604,6 +737,17 @@ export function deserialize(raw: string): GameState {
     e10Read: rec.e10Read === true,
     lipSeen: rec.lipSeen === true,
     gongSeen: rec.gongSeen === true,
+    streetIntro: rec.streetIntro === true,
+    aCompared: rec.aCompared === true,
+    shoesSeen: rec.shoesSeen === true,
+    bLampLow: rec.bLampLow === true,
+    bBreath: rec.bBreath === true,
+    bKnocked: rec.bKnocked === true,
+    cEdge: rec.cEdge === true,
+    cBowl: rec.cBowl === true,
+    cRipple: rec.cRipple === true,
+    pz03Done: rec.pz03Done === true,
+    demoEnded: rec.demoEnded === true,
     letterKnown: false,
     birthKnown: false,
     wellOpened: false,
@@ -627,6 +771,9 @@ export function deserialize(raw: string): GameState {
 }
 
 export function journalStatus(s: GameState): string {
+  if (s.demoEnded) return '试玩结束。窗源已写入。传桶去向还没走。';
+  if (s.pz03Done) return 'PZ-03 已完成。床上的人没有哭，哭声来自床头碗。';
+  if (s.scene === 'CH1-03' || s.streetIntro) return '街窗还在对照。哭本只记看见的，还没有下结论。';
   if (s.lampTaken) return 'PZ-02 已完成。灯已借到，下一步是街窗。';
   if (s.pz02Done) return 'PZ-02 已完成。堂前称过谷老爹，私唱用的是桂芬亲眼看见的那句。';
   if (s.addressSung && s.l02) return '堂前已经起过。私唱还没对上。';

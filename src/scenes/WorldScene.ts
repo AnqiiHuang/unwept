@@ -6,7 +6,8 @@ import { audio } from '../game/audio';
 import { createActor, setBowl, syncActor } from '../game/actors';
 import { FOOT, LAYOUT } from '../game/layout';
 import { commit, getSettings, getState, setSettings, setState } from '../game/session';
-import { paintHall, paintPro01, paintPro02 } from '../game/scenery';
+import { paintHall, paintPro01, paintPro02, paintStreet } from '../game/scenery';
+import { runBed, runDemoMenu, runStove, runStreetEnd, runWindow, type StreetUi } from '../data/street';
 import { FONT, makeButton, textStyle } from '../ui/widgets';
 
 type Mode = 'play' | 'dialog' | 'choice' | 'panel' | 'pause' | 'script';
@@ -85,12 +86,13 @@ export class WorldScene extends Phaser.Scene {
     this.panelRoot = undefined;
     this.sceneId = getState().scene;
     this.facing = getState().facing;
-    const area = this.sceneId === 'PRO-01' ? LAYOUT.pro01 : this.sceneId === 'PRO-02' ? LAYOUT.pro02 : LAYOUT.hall;
+    const area = this.sceneId === 'PRO-01' ? LAYOUT.pro01 : this.sceneId === 'PRO-02' ? LAYOUT.pro02 : this.sceneId === 'CH1-03' ? LAYOUT.street : LAYOUT.hall;
     this.worldW = area.world;
     this.minX = area.minX;
     this.maxX = area.maxX;
     if (this.sceneId === 'PRO-01') paintPro01(this);
     else if (this.sceneId === 'PRO-02') paintPro02(this);
+    else if (this.sceneId === 'CH1-03') paintStreet(this);
     else paintHall(this);
 
     this.props = this.add.graphics().setDepth(12);
@@ -105,6 +107,8 @@ export class WorldScene extends Phaser.Scene {
       createActor(this, 'guifen').setPosition(LAYOUT.pro02.guifen, FOOT).setDepth(16);
       createActor(this, 'guyu').setPosition(LAYOUT.pro02.guifen - 180, FOOT).setDepth(16);
       this.buildPro02();
+    } else if (this.sceneId === 'CH1-03') {
+      this.buildStreet();
     } else {
       createActor(this, 'guifen').setPosition(LAYOUT.hall.guifen, FOOT).setDepth(16);
       createActor(this, 'guyu').setPosition(LAYOUT.hall.guyu, FOOT).setDepth(16);
@@ -335,6 +339,47 @@ export class WorldScene extends Phaser.Scene {
         this.props.fillStyle(0xf7f4ee, 0.35);
         this.props.fillRect(LAYOUT.hall.curtain - 70, 430, 36, 280);
       }
+    }
+    if (this.sceneId === 'CH1-03') this.drawStreetMarks(s);
+  }
+
+  private drawStreetMarks(s: ReturnType<typeof getState>) {
+    const L = LAYOUT.street;
+    const quiet = getSettings().reduceMotion;
+    if (s.aCompared) {
+      this.props.fillStyle(0xe2a15a, 1);
+      this.props.fillCircle(L.stove - 30, 620, 5);
+      this.props.fillCircle(L.stove - 12, 620, 5);
+      this.props.fillStyle(0xd7c7a4, 0.9);
+      this.props.fillRect(L.stove + 16, 612, quiet ? 54 : 54, 6);
+    }
+    if (s.bBreath) {
+      this.props.fillStyle(0xd9d3c8, 0.95);
+      this.props.fillRect(L.window - 20, 560, 36, 8);
+      this.props.fillRect(L.window + 28, 548, 36, 8);
+      this.props.fillRect(L.window + 76, 560, 36, 8);
+      this.props.fillStyle(0xd7c7a4, 0.9);
+      this.props.fillRect(L.window + 130, 552, 70, 6);
+    }
+    if (s.cEdge && !s.cBowl) {
+      this.props.fillStyle(0xf2e2b0, 0.8);
+      this.props.fillRect(L.bed - 10, 430, 8, 36);
+      this.props.fillRect(L.bed + 16, 430, 8, 36);
+    }
+    if (s.cBowl) {
+      this.props.fillStyle(0xe7e1d6, 1);
+      this.props.fillEllipse(L.bed + 40, 500, 28, 12);
+    }
+    if (s.cRipple) {
+      this.props.lineStyle(2, 0xd7e4ea, 0.9);
+      this.props.strokeCircle(L.bed + 40, 496, 16);
+      this.props.strokeCircle(L.bed + 40, 496, 26);
+    }
+    if (s.lampTaken) {
+      this.props.fillStyle(0xc4552a, 1);
+      this.props.fillRoundedRect(this.player.x + 34, FOOT - 70, 14, 20, 2);
+      this.props.fillStyle(0xf2d48a, 1);
+      this.props.fillCircle(this.player.x + 41, FOOT - 76, 4);
     }
   }
 
@@ -587,6 +632,22 @@ export class WorldScene extends Phaser.Scene {
       if (!this.alive) return;
       this.commitAction({ type: 'finishHallIntro' });
     }
+    if (getState().scene === 'CH1-03' && !getState().streetIntro) {
+      this.mode = 'script';
+      this.player.x = LAYOUT.street.fromHall;
+      await this.say([{ speaker: 'narration', text: '小满把提灯挂在箱侧的钩上，端着碗走进街。灶膛还红着。窗台边挂着一杆没收的秤。' }]);
+      if (!this.alive) return;
+      await this.moveLockedTo(LAYOUT.street.stove);
+      if (!this.alive) return;
+      await this.say([
+        { speaker: 'narration', text: '刚走两步，火星从灶门缝里蹦出来。哭声恰在这一下断了。她敲敲箱扣，扣子还系着。', sound: 'crackle', caption: '〔灶门〕火星。〔右侧〕哭声断了一下。' },
+        { speaker: 'xiaoman', text: '里头有人么？我是谷家请来守灵的。' },
+        { speaker: 'narration', text: '屋里没有人应。只有一段低哭从右面拖过来。', sound: 'cry', caption: '〔右侧，隔着一扇窗〕哭声，断续。' },
+      ]);
+      if (!this.alive) return;
+      this.commitAction({ type: 'enterStreet' });
+      this.commitAction({ type: 'move', x: this.player.x, facing: this.facing });
+    }
     if (this.alive && this.mode === 'script') this.mode = 'play';
     if (this.alive && this.sceneId === 'CH1-01' && getState().pz01Done) this.syncProps();
     this.syncProps();
@@ -646,6 +707,19 @@ export class WorldScene extends Phaser.Scene {
       { id: 'hint', x: L.guifen, range: 100, label: '问桂芬', available: () => getState().clothsGiven, use: () => void this.askHallGuifen() },
       { id: 'guyu', x: L.guyu, range: 90, label: '谷雨', available: () => getState().hallIntro, use: () => void this.hallGuyu() },
       { id: 'jianjun', x: L.jianjun, range: 100, label: '谷建军', available: () => getState().hallIntro, use: () => void this.hallJianjun() },
+      { id: 'street', x: L.street, range: 110, label: '去街窗', available: () => true, use: () => void this.leaveToStreet() },
+    ];
+  }
+
+  private buildStreet() {
+    const L = LAYOUT.street;
+    this.spots = [
+      { id: 'back', x: L.minX + 40, range: 120, label: '回门廊', available: () => true, use: () => void this.go('CH1-01', LAYOUT.hall.street - 80, -1) },
+      { id: 'stove', x: L.stove, range: 140, label: '听灶门', available: () => getState().streetIntro, use: () => void this.streetUi(runStove) },
+      { id: 'window', x: L.window, range: 140, label: '窗左', available: () => getState().streetIntro, use: () => void this.streetUi(runWindow) },
+      { id: 'bed', x: L.bed, range: 140, label: '床头窗', available: () => getState().streetIntro, use: () => void this.streetUi(runBed) },
+      { id: 'step', x: L.bed - 180, range: 100, label: '退半步', available: () => getState().pz03Done, use: () => void this.streetUi(runDemoMenu) },
+      { id: 'end', x: L.end, range: 140, label: '街尽头', available: () => true, use: () => void this.streetUi(runStreetEnd) },
     ];
   }
 
@@ -1098,6 +1172,44 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     await this.say([{ speaker: 'jianjun', text: '人在供桌边上，掌根按着钥匙。三夜的事他还没开口。' }]);
+  }
+
+  private streetTalk(): StreetUi {
+    return {
+      ...this.hallTalk(),
+      fade: () => this.fadeStreet(),
+      toTitle: () => {
+        this.commitAction({ type: 'move', x: this.player.x, facing: this.facing });
+        this.scene.start('title');
+      },
+    };
+  }
+
+  private async streetUi(run: (ui: StreetUi) => Promise<void>) {
+    this.mode = 'script';
+    await run(this.streetTalk());
+    if (this.alive && (this.mode === 'script' || this.mode === 'play')) this.mode = 'play';
+    this.syncProps();
+  }
+
+  private fadeStreet() {
+    this.cameras.main.fadeOut(700, 0, 0, 0);
+    return new Promise<void>((resolve) => {
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+        resolve();
+      });
+    });
+  }
+
+  private async leaveToStreet() {
+    const block = travelBlock(getState(), 'CH1-03');
+    if (block) {
+      await this.say([{ speaker: 'narration', text: TRAVEL_HINT[block] ?? '现在走不过去。' }]);
+      return;
+    }
+    const x = getState().streetIntro ? LAYOUT.street.stove : LAYOUT.street.fromHall;
+    await this.go('CH1-03', x, 1);
   }
 
   private async go(to: SceneId, x: number, facing: 1 | -1) {

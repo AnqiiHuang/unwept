@@ -312,7 +312,7 @@ export async function runLamp(ui: HallUi) {
     return;
   }
   if (ui.state().lampTaken) {
-    await ui.say([{ speaker: 'narration', text: '灯挂在箱侧的钩上。下一步是出门看街窗。这一轮先停在门廊。' }]);
+    await ui.say([{ speaker: 'narration', text: '灯在手里。门廊右边就是街窗。' }]);
     return;
   }
   await ui.say([
