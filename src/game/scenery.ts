@@ -82,12 +82,13 @@ export function paintPro01(scene: Phaser.Scene) {
   const front = scene.add.graphics().setDepth(40);
   reeds(front, 40, 0xc2b48a);
   reeds(front, 4700, 0xb7a27a);
-  const tag = scene.add.text(24, 24, '开发占位 · 库边泥滩　光色对齐开场，道路按能走的位置铺，不是成稿分层', {
+  const tag = scene.add.text(1884, 108, '开发占位 · 库边泥滩\n光色对齐开场，按能走的位置铺，不是成稿分层', {
     fontFamily: '"Songti SC", serif',
-    fontSize: '22px',
+    fontSize: '20px',
     color: '#f0e6d6',
     backgroundColor: '#00000066',
-  }).setScrollFactor(0).setDepth(50);
+    align: 'right',
+  }).setOrigin(1, 0).setScrollFactor(0).setDepth(70);
   return { tag };
 }
 

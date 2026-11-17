@@ -4,15 +4,27 @@ export type ActorKind = 'xiaoman' | 'changgui' | 'guyu' | 'guifen' | 'jianjun';
 
 function drawBowl(g: Phaser.GameObjects.Graphics) {
   g.clear();
-  g.fillStyle(0xe7e1d4, 1);
-  g.fillEllipse(36, -128, 34, 16);
-  g.lineStyle(3, 0xb7aa98, 1);
-  g.strokeEllipse(36, -128, 34, 16);
-  g.fillStyle(0x8fb4c4, 0.85);
-  g.fillEllipse(36, -128, 22, 8);
+  g.fillStyle(0xc4a48c, 1);
+  g.fillRoundedRect(-20, 2, 30, 11, 4);
+  g.fillRoundedRect(6, 1, 7, 13, 3);
+  g.fillRoundedRect(14, 3, 6, 11, 3);
   g.fillStyle(0xc9b8a4, 1);
-  g.fillRect(48, -132, 6, 5);
+  g.fillEllipse(0, 5, 42, 12);
+  g.fillStyle(0xe7e1d4, 1);
+  g.fillEllipse(0, 0, 38, 10);
+  g.lineStyle(2, 0xb7aa98, 1);
+  g.strokeEllipse(0, 0, 38, 10);
+  g.fillStyle(0x8fb4c4, 0.9);
+  g.fillEllipse(0, 1, 22, 5);
+  g.fillStyle(0xc4552a, 1);
+  g.fillRect(12, -2, 6, 3);
 }
+
+const WALK_HANDS = [
+  { hold: [58, -182], other: [-22, -168] },
+  { hold: [54, -178], other: [-32, -166] },
+  { hold: [16, -164], other: [2, -162] },
+];
 
 function drawXiaoman(g: Phaser.GameObjects.Graphics) {
   g.fillStyle(0x241c16, 0.35);
@@ -180,21 +192,18 @@ export function syncActor(actor: Phaser.GameObjects.Container, moving: boolean, 
   const height = (actor.getData('bodyHeight') as number | undefined) ?? 360;
   const showPaintedBowl = Boolean(bowlOn && !moving && bowlKey && sprite);
   const showCarry = Boolean(!showPaintedBowl && carryOn && !moving && carryKey && sprite);
+  const frameIndex = frames?.length ? (moving ? Math.floor(time / 160) % frames.length : 0) : 0;
   if (sprite && frames?.length) {
-    const key = showPaintedBowl
-      ? bowlKey!
-      : showCarry
-        ? carryKey!
-        : moving
-          ? frames[Math.floor(time / 160) % frames.length]
-          : frames[0];
+    const key = showPaintedBowl ? bowlKey! : showCarry ? carryKey! : moving ? frames[frameIndex] : frames[0];
     if (sprite.texture.key !== key && sprite.scene.textures.exists(key)) {
       sprite.setTexture(key);
       fitHeight(sprite, height);
     }
   }
   if (!bowl) return;
+  const hands = WALK_HANDS[frameIndex] ?? WALK_HANDS[0];
+  const point = bowlHigh ? hands.other : hands.hold;
   bowl.setVisible(bowlOn && !showPaintedBowl);
-  bowl.setPosition(34, bowlHigh ? -height * 0.62 : -height * 0.55);
-  bowl.setScale(height / 300);
+  bowl.setScale(1);
+  bowl.setPosition(point[0], point[1]);
 }

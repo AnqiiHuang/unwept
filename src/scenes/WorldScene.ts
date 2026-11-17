@@ -133,10 +133,14 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.16, 1);
     this.cameras.main.fadeIn(350, 12, 10, 8);
 
-    this.objectiveText = this.add.text(36, 78, '', textStyle(24, '#f4ecdf')).setScrollFactor(0).setDepth(80);
-    this.helpText = this.add.text(36, 118, HELP, textStyle(22, '#f0e6d6')).setScrollFactor(0).setDepth(80);
-    this.promptText = this.add.text(36, 152, '', textStyle(24, '#f7e7c2')).setScrollFactor(0).setDepth(80);
-    this.captionText = this.add.text(960, 150, '', textStyle(28, '#f7f1e6')).setOrigin(0.5).setScrollFactor(0).setDepth(90).setAlpha(0);
+    this.objectiveText = this.add.text(36, 58, '', textStyle(24, '#f4ecdf')).setScrollFactor(0).setDepth(80);
+    this.objectiveText.setWordWrapWidth(1240, true);
+    this.helpText = this.add.text(36, 100, HELP, textStyle(22, '#f0e6d6')).setScrollFactor(0).setDepth(80);
+    this.helpText.setWordWrapWidth(1240, true);
+    this.promptText = this.add.text(36, 156, '', textStyle(24, '#f7e7c2')).setScrollFactor(0).setDepth(80);
+    this.captionText = this.add.text(960, 236, '', textStyle(26, '#f7f1e6')).setOrigin(0.5).setScrollFactor(0).setDepth(90).setAlpha(0);
+    this.captionText.setAlign('center');
+    this.captionText.setWordWrapWidth(860, true);
 
     const bag = makeButton(this, 1500, 48, 140, 48, '物品', () => this.openInventory());
     const note = makeButton(this, 1660, 48, 140, 48, '笔记', () => this.openJournal());
@@ -370,7 +374,7 @@ export class WorldScene extends Phaser.Scene {
     if (!getSettings().subtitles) return;
     this.captionText.setText(message).setAlpha(1);
     this.tweens.killTweensOf(this.captionText);
-    this.tweens.add({ targets: this.captionText, alpha: 0, delay: 2200, duration: 400 });
+    this.tweens.add({ targets: this.captionText, alpha: 0, delay: 4000, duration: 400 });
   }
 
   private commitAction(action: Action): ApplyResult {
@@ -521,7 +525,11 @@ export class WorldScene extends Phaser.Scene {
       marker.setVisible(on);
       marker.setPosition(spot.x, FOOT - 188 - (i % 5) * 72);
       const near = on && Math.abs(this.player.x - spot.x) <= spot.range;
-      marker.setAlpha(near ? 1 : 0.45);
+      marker.setAlpha(near ? 1 : 0.5);
+      const tri = marker.getAt(0) as Phaser.GameObjects.Graphics | undefined;
+      const label = marker.getAt(1) as Phaser.GameObjects.Text | undefined;
+      tri?.setVisible(near);
+      label?.setColor(near ? '#fff6e4' : '#8d8272');
     });
     if (this.sceneId === 'PRO-01') this.syncProps();
   }
