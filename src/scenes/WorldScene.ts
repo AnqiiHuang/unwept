@@ -3,7 +3,7 @@ import { apply, journalStatus, objective, travelBlock, type Action, type ApplyRe
 import { EVIDENCE, ITEM_TEXT, LINES, NOTES, SPEAKER_NAME, TRAVEL_HINT, type Line, type Speaker } from '../core/lines';
 import { runBody, runBook, runCommission, runGong, runLamp, runRite, runTestimony, type HallUi } from '../data/hallAfter';
 import { audio } from '../game/audio';
-import { createActor, setBowl, syncActor } from '../game/actors';
+import { createActor, setBowl, setCarry, syncActor } from '../game/actors';
 import { FOOT, LAYOUT } from '../game/layout';
 import { commit, getSettings, getState, setSettings, setState } from '../game/session';
 import { paintHall, paintPro01, paintPro02, paintStreet } from '../game/scenery';
@@ -21,6 +21,9 @@ interface Spot {
   available: () => boolean;
   use: () => void;
 }
+
+const HELP = 'A/D 或左右移动 · 点地面走路 · E 调查 · Tab 热点 · I 物品 · J 笔记 · B 换手端碗 · Esc 暂停';
+const COACH = '按 E，或点「哭箱」。点地面走路，也可以按 A / D。';
 
 const PORTRAIT: Partial<Record<Speaker, number>> = {
   xiaoman: 0x7e93a4,
@@ -49,6 +52,7 @@ export class WorldScene extends Phaser.Scene {
   private spots: Spot[] = [];
   private markers: Phaser.GameObjects.Container[] = [];
   private props!: Phaser.GameObjects.Graphics;
+  private carryBox!: Phaser.GameObjects.Graphics;
   private objectiveText!: Phaser.GameObjects.Text;
   private helpText!: Phaser.GameObjects.Text;
   private promptText!: Phaser.GameObjects.Text;
@@ -70,6 +74,8 @@ export class WorldScene extends Phaser.Scene {
   private metLatch = false;
   private compareView?: CompareView;
   private keyLatch = false;
+  private blockGround = false;
+  private coach = false;
 
   constructor() {
     super('world');
@@ -101,6 +107,7 @@ export class WorldScene extends Phaser.Scene {
     else paintHall(this);
 
     this.props = this.add.graphics().setDepth(12);
+    this.carryBox = this.add.graphics().setDepth(24);
     this.player = createActor(this, 'xiaoman').setDepth(20);
     this.player.setPosition(getState().x, FOOT);
     this.player.scaleX = this.facing;
@@ -127,7 +134,7 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.fadeIn(350, 12, 10, 8);
 
     this.objectiveText = this.add.text(36, 78, '', textStyle(24, '#f4ecdf')).setScrollFactor(0).setDepth(80);
-    this.helpText = this.add.text(36, 118, 'A/D 或左右移动 · 点地面走路 · E 调查 · Tab 热点 · I 物品 · J 笔记 · B 换手端碗 · Esc 暂停', textStyle(22, '#f0e6d6')).setScrollFactor(0).setDepth(80);
+    this.helpText = this.add.text(36, 118, HELP, textStyle(22, '#f0e6d6')).setScrollFactor(0).setDepth(80);
     this.promptText = this.add.text(36, 152, '', textStyle(24, '#f7e7c2')).setScrollFactor(0).setDepth(80);
     this.captionText = this.add.text(960, 150, '', textStyle(28, '#f7f1e6')).setOrigin(0.5).setScrollFactor(0).setDepth(90).setAlpha(0);
 
@@ -139,7 +146,21 @@ export class WorldScene extends Phaser.Scene {
     this.input.topOnly = true;
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       audio.ensure(getSettings().master);
-      if (this.mode !== 'play') return;
+      if (this.blockGround) return;
+      if (this.mode === 'choice') {
+        this.caption('先在下面选一句。');
+        return;
+      }
+      if (this.mode === 'dialog' || this.mode === 'panel' || this.mode === 'pause') return;
+      if (this.mode !== 'play') {
+        this.caption('她还在走。这一步停下来再查。');
+        return;
+      }
+      const marker = this.markerUnder(pointer);
+      if (marker) {
+        this.useSpot(marker);
+        return;
+      }
       if (over.length > 0) return;
       this.onGround(pointer);
     });
@@ -151,7 +172,11 @@ export class WorldScene extends Phaser.Scene {
         if (event.repeat) return;
         if (this.mode === 'dialog' && (event.code === 'Enter' || event.code === 'Space' || event.code === 'KeyE' || event.code === 'Escape')) {
           this.keyLatch = true;
+          this.blockGround = true;
           this.advanceDialog();
+        } else if (this.mode === 'play' && (event.code === 'KeyE' || event.code === 'Enter')) {
+          this.keyLatch = true;
+          this.interactFocused();
         } else if ((this.mode === 'panel' || this.mode === 'pause') && event.code === 'Escape') {
           this.keyLatch = true;
           this.closePanel();
@@ -184,14 +209,21 @@ export class WorldScene extends Phaser.Scene {
     const dt = delta / 1000;
     this.readKeys();
     if (this.mode === 'play') this.move(dt);
+    else this.moving = this.mode === 'script' ? this.moving : false;
     this.player.y = FOOT + (this.moving && !getSettings().reduceMotion ? Math.sin(this.time.now / 90) * 4 : 0);
     this.player.scaleX = this.facing;
+    const state = getState();
+    setCarry(this.player, this.carryingChest(state));
     syncActor(this.player, this.moving, this.time.now, this.bowlHigh);
     this.syncMarkers();
     this.compareView?.tick(delta);
-    this.objectiveText.setText(objective(getState()));
-    this.helpText.setVisible(this.mode === 'play');
-    this.promptText.setVisible(this.mode === 'play');
+    const free = this.mode === 'play';
+    this.objectiveText.setText(this.mode === 'script' ? '她还在走。' : objective(state));
+    this.helpText.setVisible(free);
+    this.promptText.setVisible(free);
+    if (free) this.helpText.setText(this.coach && !state.bowlTaken ? COACH : HELP);
+    if (this.coach && (state.bowlTaken || Math.abs(this.player.x - LAYOUT.pro01.stand) > 90)) this.coach = false;
+    this.blockGround = false;
     if (this.sceneId === 'PRO-01' && this.mode === 'play' && getState().pro01Intro && !getState().chestAside && !this.metLatch) {
       if (Math.abs(this.player.x - LAYOUT.pro01.stake) < 160) void this.guyuMeet();
     }
@@ -223,7 +255,6 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     if (this.mode !== 'play') return;
-    if (down('E') || down('ENTER')) this.interactFocused();
     if (down('TAB')) this.cycle();
     if (down('I')) this.openInventory();
     if (down('J')) this.openJournal();
@@ -284,13 +315,44 @@ export class WorldScene extends Phaser.Scene {
     this.player.x = next;
   }
 
+  private markerUnder(pointer: Phaser.Input.Pointer) {
+    const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    for (let i = 0; i < this.spots.length; i += 1) {
+      const spot = this.spots[i];
+      if (!spot.available()) continue;
+      const y = FOOT - 188 - (i % 5) * 72;
+      if (Math.abs(world.x - spot.x) <= 110 && world.y >= y - 80 && world.y <= y + 50) return spot;
+    }
+    return undefined;
+  }
+
+  private useSpot(spot: Spot) {
+    if (this.mode !== 'play') return;
+    this.blockGround = true;
+    if (!spot.available()) {
+      this.caption('现在还不能查这个。');
+      return;
+    }
+    if (Math.abs(this.player.x - spot.x) <= spot.range) spot.use();
+    else {
+      const gap = Math.min(80, Math.max(16, spot.range - 12));
+      const beside = spot.x + (this.player.x < spot.x ? -gap : gap);
+      this.targetX = Phaser.Math.Clamp(beside, this.minX, this.maxX);
+      this.pending = spot.id;
+      this.caption(`往「${spot.label}」走。`);
+    }
+  }
+
   private onGround(pointer: Phaser.Input.Pointer) {
     const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
     if (this.sceneId === 'PRO-01' && (world.x < LAYOUT.pro01.wetUntil || world.y > 1000)) {
       this.wet(world.y > 1000 ? '这边是湿泥，看着亮，里头还软。' : '鞋尖陷进湿泥，小满把脚收回来。');
       return;
     }
-    if (world.y < 640 || world.y > 1020) return;
+    if (world.y < 640 || world.y > 1020) {
+      this.caption('点地面才能走。要查的话，点亮着的名字，或按 E。');
+      return;
+    }
     this.targetX = Phaser.Math.Clamp(world.x, this.minX, this.maxX);
     this.pending = null;
   }
@@ -327,12 +389,10 @@ export class WorldScene extends Phaser.Scene {
     this.bundleTexts.forEach((t) => t.destroy());
     this.bundleTexts = [];
     this.props.clear();
+    this.carryBox.clear();
     if (this.sceneId === 'PRO-01') {
-      const chestX = s.bowlTaken ? LAYOUT.pro01.stand : this.player.x + this.facing * 42;
-      this.props.fillStyle(0x4a3428, 1);
-      this.props.fillRoundedRect(chestX - 28, FOOT - 46, 56, 34, 4);
-      this.props.fillStyle(0xd7c39a, 1);
-      this.props.fillRect(chestX - 6, FOOT - 52, 14, 8);
+      if (this.carryingChest(s) && this.moving) this.drawChest(this.carryBox, this.player.x + this.facing * 78, FOOT - 176, false);
+      else if (!this.carryingChest(s)) this.drawChest(this.props, this.chestAnchor(s), FOOT - 18, true);
     }
     if (this.sceneId === 'PRO-02' && s.teaDecided && !s.drankOathWater) {
       this.props.fillStyle(0x4d4338, 0.85);
@@ -412,6 +472,31 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  private carryingChest(s: ReturnType<typeof getState>) {
+    return this.sceneId === 'PRO-01' && !s.bowlTaken && !s.chestAside;
+  }
+
+  private chestAnchor(s: ReturnType<typeof getState>) {
+    if (s.bowlTaken) return LAYOUT.pro01.stand;
+    if (s.chestAside) return LAYOUT.pro01.stake + 130;
+    return this.player.x + this.facing * 54;
+  }
+
+  private drawChest(g: Phaser.GameObjects.Graphics, x: number, y: number, placed: boolean) {
+    if (placed) {
+      g.fillStyle(0x3a2a22, 0.35);
+      g.fillEllipse(x, FOOT + 6, 86, 16);
+    }
+    g.fillStyle(0x6a4a34, 1);
+    g.fillRoundedRect(x - 34, y - 28, 68, 46, 4);
+    g.fillStyle(0x8a6244, 1);
+    g.fillRect(x - 34, y - 8, 68, 8);
+    g.fillStyle(0xd7c39a, 1);
+    g.fillRoundedRect(x - 16, y - 40, 32, 12, 3);
+    g.lineStyle(3, 0xc4552a, 1);
+    g.strokeRect(x - 22, y - 4, 16, 12);
+  }
+
   private drawStrip(x: number, y: number, h: number, needle = false) {
     this.props.fillStyle(0xf4f1ea, 0.95);
     this.props.fillRoundedRect(x, y, needle ? 16 : 22, h, 3);
@@ -422,20 +507,23 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private syncMarkers() {
-    const chest = this.spots.find((s) => s.id === 'chest');
-    if (chest) chest.x = getState().bowlTaken ? LAYOUT.pro01.stand : this.player.x;
-    const reachable = this.spots.filter((s) => s.available() && Math.abs(this.player.x - s.x) <= s.range);
+    const s = getState();
+    const chest = this.spots.find((spot) => spot.id === 'chest');
+    if (chest && this.sceneId === 'PRO-01') chest.x = this.chestAnchor(s);
+    const free = this.mode === 'play';
+    const reachable = free ? this.spots.filter((spot) => spot.available() && Math.abs(this.player.x - spot.x) <= spot.range) : [];
+    if (this.focus >= reachable.length) this.focus = 0;
     const focused = reachable[this.focus] ?? reachable[0];
     this.promptText.setText(focused ? `E　${focused.label}` : '');
     this.markers.forEach((marker, i) => {
       const spot = this.spots[i];
-      const on = spot.available();
+      const on = free && spot.available();
       marker.setVisible(on);
-      marker.setPosition(spot.x, FOOT - 150 - (i % 5) * 72);
+      marker.setPosition(spot.x, FOOT - 188 - (i % 5) * 72);
       const near = on && Math.abs(this.player.x - spot.x) <= spot.range;
-      marker.setAlpha(near ? 1 : 0.25);
+      marker.setAlpha(near ? 1 : 0.45);
     });
-    if (this.sceneId === 'PRO-01' && !getState().bowlTaken) this.syncProps();
+    if (this.sceneId === 'PRO-01') this.syncProps();
   }
 
   private cycle() {
@@ -460,27 +548,27 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private makeMarker(spot: Spot) {
-    const root = this.add.container(spot.x, FOOT - 210).setDepth(28);
+    const root = this.add.container(spot.x, FOOT - 210).setDepth(46);
     const g = this.add.graphics();
     g.fillStyle(0xf3e2b8, 0.95);
     g.fillTriangle(0, 16, -9, -2, 9, -2);
     const label = this.add.text(0, -28, spot.label, textStyle(22, '#f8f1e4')).setOrigin(0.5);
     root.add([g, label]);
-    root.setSize(148, 64);
+    root.setSize(180, 120);
     const ox = root.displayOriginX;
     const oy = root.displayOriginY;
-    root.setInteractive(new Phaser.Geom.Rectangle(ox - 74, oy - 42, 148, 60), Phaser.Geom.Rectangle.Contains);
-    root.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    root.setInteractive(new Phaser.Geom.Rectangle(ox - 90, oy - 110, 180, 150), Phaser.Geom.Rectangle.Contains);
+    const onPick = (pointer: Phaser.Input.Pointer) => {
       pointer.event?.stopPropagation?.();
-      if (this.mode !== 'play') return;
-      if (Math.abs(this.player.x - spot.x) <= spot.range) spot.use();
-      else {
-        const gap = Math.min(80, Math.max(16, spot.range - 12));
-        const beside = spot.x + (this.player.x < spot.x ? -gap : gap);
-        this.targetX = Phaser.Math.Clamp(beside, this.minX, this.maxX);
-        this.pending = spot.id;
+      if (this.mode !== 'play') {
+        this.caption(this.mode === 'dialog' || this.mode === 'choice' ? '先把这句说完。' : '她还在走。这一步停下来再查。');
+        return;
       }
-    });
+      this.useSpot(spot);
+    };
+    label.setInteractive();
+    label.on('pointerdown', onPick);
+    root.on('pointerdown', onPick);
     return root;
   }
 
@@ -527,6 +615,12 @@ export class WorldScene extends Phaser.Scene {
     if (playSound && line.sound) audio.play(line.sound);
     if (line.caption) this.caption(line.caption);
     const root = this.add.container(0, 0).setScrollFactor(0).setDepth(200);
+    const catcher = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.001).setScrollFactor(0).setInteractive();
+    catcher.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      pointer.event?.stopPropagation?.();
+      this.blockGround = true;
+      this.caption('点下面的句子，或按空格。');
+    });
     const box = this.add.rectangle(960, 960, 1880, 210, 0x140f0c, 0.9).setStrokeStyle(2, 0xd9c7a4).setScrollFactor(0).setInteractive();
     box.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       pointer.event?.stopPropagation?.();
@@ -536,7 +630,7 @@ export class WorldScene extends Phaser.Scene {
     const portraitKey = `portrait-${line.speaker}`;
     const paintedPortrait = this.textures.exists(portraitKey);
     const showPortrait = paintedPortrait || Boolean(PORTRAIT[line.speaker]);
-    const bits: Phaser.GameObjects.GameObject[] = [box];
+    const bits: Phaser.GameObjects.GameObject[] = [catcher, box];
     if (showPortrait) {
       const left = line.speaker === 'xiaoman';
       const px = left ? 150 : 1770;
@@ -559,7 +653,7 @@ export class WorldScene extends Phaser.Scene {
     }
     const who = this.add.text(80, 880, name, textStyle(24, '#d9c7a4'));
     const body = this.add.text(80, 920, line.text, textStyle(getSettings().largeText ? 36 : 30)).setWordWrapWidth(showPortrait ? 1500 : 1700, true);
-    const hint = this.add.text(1680, 1040, this.dialogHidden ? '' : '点这里或空格继续', textStyle(20, '#cbbba6')).setOrigin(0.5);
+    const hint = this.add.text(1480, 880, '点击或空格继续', textStyle(20, '#cbbba6')).setOrigin(0.5);
     const hide = makeButton(this, 1760, 890, 180, 46, this.dialogHidden ? '显示对白' : '隐藏对白', () => {
       this.dialogHidden = !this.dialogHidden;
       this.renderDialog(false);
@@ -577,6 +671,7 @@ export class WorldScene extends Phaser.Scene {
 
   private advanceDialog() {
     if (this.mode !== 'dialog') return;
+    this.blockGround = true;
     this.dialogIndex += 1;
     if (this.dialogIndex >= this.dialogLines.length) {
       this.dialogRoot?.destroy();
@@ -628,6 +723,7 @@ export class WorldScene extends Phaser.Scene {
 
   private pickChoice(id: string) {
     if (this.mode !== 'choice') return;
+    this.blockGround = true;
     this.choiceRoot?.destroy();
     this.choiceRoot = undefined;
     this.mode = this.modeBefore === 'choice' ? 'play' : this.modeBefore;
@@ -651,6 +747,9 @@ export class WorldScene extends Phaser.Scene {
       await this.say(LINES.pro01Intro);
       if (!this.alive) return;
       this.commitAction({ type: 'finishPro01Intro', x: this.player.x, facing: this.facing });
+      this.coach = true;
+    } else if (getState().scene === 'PRO-01' && !getState().bowlTaken) {
+      this.coach = true;
     }
     if (getState().scene === 'PRO-02' && !getState().pro02Intro) {
       await this.say([{ speaker: 'narration', text: '谷雨钻过晾衣绳，围裙兜住脑袋。她顶着布走了两步，辫梢上是一块白粉。桂芬正把筷子往竹筒里插。' }]);

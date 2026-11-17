@@ -145,6 +145,7 @@ export function createActor(scene: Phaser.Scene, kind: ActorKind) {
     if (kind === 'xiaoman') {
       root.setData('frames', ['scene-xiaoman-1', 'scene-xiaoman-2', 'scene-xiaoman-3']);
       root.setData('bowlKey', 'scene-xiaoman-bowl');
+      root.setData('carryKey', 'scene-xiaoman-carry');
     }
   } else {
     const body = scene.add.graphics();
@@ -162,20 +163,32 @@ export function createActor(scene: Phaser.Scene, kind: ActorKind) {
 
 export function setBowl(actor: Phaser.GameObjects.Container, on: boolean) {
   actor.setData('bowlOn', on);
-  syncActor(actor, false, 0, false);
+}
+
+export function setCarry(actor: Phaser.GameObjects.Container, on: boolean) {
+  actor.setData('carryOn', on);
 }
 
 export function syncActor(actor: Phaser.GameObjects.Container, moving: boolean, time: number, bowlHigh: boolean) {
   const sprite = actor.getData('sprite') as Phaser.GameObjects.Image | undefined;
   const bowl = actor.getData('bowl') as Phaser.GameObjects.Graphics | undefined;
   const bowlOn = Boolean(actor.getData('bowlOn'));
+  const carryOn = Boolean(actor.getData('carryOn'));
   const frames = actor.getData('frames') as string[] | undefined;
   const bowlKey = actor.getData('bowlKey') as string | undefined;
+  const carryKey = actor.getData('carryKey') as string | undefined;
   const height = (actor.getData('bodyHeight') as number | undefined) ?? 360;
   const showPaintedBowl = Boolean(bowlOn && !moving && bowlKey && sprite);
+  const showCarry = Boolean(!showPaintedBowl && carryOn && !moving && carryKey && sprite);
   if (sprite && frames?.length) {
-    const key = showPaintedBowl ? bowlKey! : moving ? frames[1 + (Math.floor(time / 180) % (frames.length - 1))] : frames[0];
-    if (sprite.texture.key !== key) {
+    const key = showPaintedBowl
+      ? bowlKey!
+      : showCarry
+        ? carryKey!
+        : moving
+          ? frames[Math.floor(time / 160) % frames.length]
+          : frames[0];
+    if (sprite.texture.key !== key && sprite.scene.textures.exists(key)) {
       sprite.setTexture(key);
       fitHeight(sprite, height);
     }

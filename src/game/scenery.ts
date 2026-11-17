@@ -7,50 +7,82 @@ function sky(g: Phaser.GameObjects.Graphics, w: number, top: number, bottom: num
 }
 
 export function paintPro01(scene: Phaser.Scene) {
-  const w = LAYOUT.pro01.world;
+  const L = LAYOUT.pro01;
+  const w = L.world;
   const skyG = scene.add.graphics().setDepth(0);
-  sky(skyG, w, 0x3c4058, 0xc4846a);
+  sky(skyG, w, 0x6e7584, 0xe7b08a);
+  skyG.fillStyle(0xc4846a, 0.55);
+  skyG.fillRect(0, 500, w, 160);
   const far = scene.add.graphics().setDepth(1);
-  far.fillStyle(0x6d7c86, 1);
-  far.fillRect(0, 560, w, 120);
-  far.fillStyle(0x8ea0a6, 0.55);
-  far.fillEllipse(420, 590, 900, 70);
-  far.fillStyle(0x5d564e, 0.9);
-  far.fillTriangle(80, 560, 260, 430, 460, 560);
-  far.fillTriangle(300, 560, 520, 390, 760, 560);
-  far.fillStyle(0xd9d3c8, 0.8);
-  for (let i = 0; i < 5; i++) {
-    far.fillRect(140 + i * 70, 500, 36, 28);
-    far.fillTriangle(132 + i * 70, 500, 158 + i * 70, 478, 184 + i * 70, 500);
+  far.fillStyle(0x8a9390, 1);
+  far.fillTriangle(0, 620, 220, 400, 640, 620);
+  far.fillTriangle(380, 620, 760, 360, 1180, 620);
+  far.fillStyle(0x5c6a62, 1);
+  far.fillTriangle(900, 620, 1320, 430, 1760, 620);
+  far.fillTriangle(2100, 600, 2680, 390, 3300, 600);
+  far.fillTriangle(3600, 590, 4300, 340, 5100, 590);
+  far.fillStyle(0xd9d3c8, 0.85);
+  for (let i = 0; i < 6; i++) {
+    const x = 240 + i * 78;
+    far.fillRect(x, 548, 34, 36);
+    far.fillTriangle(x - 8, 548, x + 17, 522, x + 42, 548);
   }
-  const ground = scene.add.graphics().setDepth(2);
-  ground.fillStyle(0x4a3b32, 1);
-  ground.fillRect(0, 700, w, 380);
-  ground.fillStyle(0x3d4e55, 0.55);
-  ground.fillEllipse(700, 860, 900, 180);
-  ground.fillStyle(0x8a6a4e, 1);
-  ground.fillRect(LAYOUT.pro01.wetUntil, 760, w, 320);
-  ground.fillStyle(0xcbb48a, 0.35);
-  ground.fillEllipse(2100, 820, 220, 36);
-  const props = scene.add.graphics().setDepth(6);
-  props.fillStyle(0x5a4636, 1);
-  props.fillRect(2500, 700, 280, 28);
-  props.fillRect(2520, 640, 18, 90);
-  props.fillRect(2740, 650, 16, 80);
-  props.fillStyle(0x6a5038, 1);
-  props.fillRoundedRect(1180, 760, 210, 26, 6);
-  props.fillRect(1240, 620, 18, 160);
-  props.lineStyle(6, 0xd7d2c6, 0.9);
-  props.beginPath();
-  props.moveTo(1250, 700);
-  props.lineTo(1360, 660);
-  props.strokePath();
-  props.fillStyle(0x2a241e, 0.8);
-  for (let i = 0; i < 4; i++) props.fillEllipse(1980 + i * 46, 790, 26, 14);
+  far.fillStyle(0x8aa0a8, 0.35);
+  far.fillRect(180, 590, 520, 8);
+  const water = scene.add.graphics().setDepth(2);
+  water.fillStyle(0x8aa0a8, 1);
+  water.fillRect(0, 600, 1680, 200);
+  water.fillStyle(0xe7b08a, 0.35);
+  water.fillEllipse(620, 690, 780, 36);
+  water.fillStyle(0x6e858c, 0.45);
+  water.fillEllipse(240, 710, 420, 28);
+  const ground = scene.add.graphics().setDepth(3);
+  ground.fillStyle(0x8d6a48, 1);
+  ground.fillRect(0, 620, w, 460);
+  ground.fillStyle(0x6a5344, 1);
+  ground.fillRect(0, 740, 1500, 340);
+  ground.fillStyle(0x7a6248, 0.55);
+  for (let i = 0; i < 5; i++) ground.fillEllipse(180 + i * 210, 900 + (i % 2) * 30, 260, 28);
+  ground.fillStyle(0xa88460, 1);
+  ground.fillRect(980, 700, w, 380);
+  ground.fillStyle(0xc4a078, 0.45);
+  ground.beginPath();
+  ground.moveTo(1200, 1080);
+  ground.lineTo(1400, 820);
+  ground.lineTo(3240, 790);
+  ground.lineTo(L.exit, 700);
+  ground.lineTo(w, 660);
+  ground.lineTo(w, 1080);
+  ground.closePath();
+  ground.fillPath();
+  ground.fillStyle(0x8d6a48, 1);
+  for (let i = 0; i < 8; i++) {
+    const x = 3900 + i * 150;
+    const y = 700 - i * 8;
+    ground.fillRect(x, y, 120, 14);
+  }
+  const props = scene.add.graphics().setDepth(8);
+  const stake = L.stake;
+  props.fillStyle(0x3a2a22, 0.35);
+  props.fillEllipse(stake + 20, FOOT + 8, 120, 18);
+  props.lineStyle(16, 0x5a4636, 1);
+  props.lineBetween(stake, FOOT + 4, stake - 70, 560);
+  props.lineStyle(8, 0x6a5038, 1);
+  props.lineBetween(stake - 10, 700, stake + 90, 640);
+  props.fillStyle(0x2a241e, 0.85);
+  for (let i = 0; i < 6; i++) props.fillEllipse(L.prints - 80 + i * 42, 830 - i * 4, 28, 14);
+  props.fillStyle(0x4a3428, 1);
+  props.fillRoundedRect(2480, 760, 240, 36, 8);
+  props.fillTriangle(2460, 778, 2500, 748, 2540, 778);
+  props.fillRect(2680, 748, 18, 48);
+  props.fillStyle(0xc4552a, 0.9);
+  props.fillCircle(4980, 520, 10);
+  props.fillStyle(0xe7b08a, 0.25);
+  props.fillCircle(4980, 520, 36);
   const front = scene.add.graphics().setDepth(40);
-  reeds(front, 80, 0xc2b48a);
+  reeds(front, 40, 0xc2b48a);
   reeds(front, 4700, 0xb7a27a);
-  const tag = scene.add.text(24, 24, '开发占位 · 库边泥滩　远景按水库岸的光色画，不是成稿分层', {
+  const tag = scene.add.text(24, 24, '开发占位 · 库边泥滩　光色对齐开场，道路按能走的位置铺，不是成稿分层', {
     fontFamily: '"Songti SC", serif',
     fontSize: '22px',
     color: '#f0e6d6',

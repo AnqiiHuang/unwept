@@ -33,10 +33,11 @@ export class OpeningScene extends Phaser.Scene {
     this.speaker = this.add.text(80, 800, '', textStyle(26, '#d9c7a4'));
     this.body = this.add.text(80, 850, '', textStyle(getSettings().largeText ? 36 : 32)).setWordWrapWidth(1500, true);
     this.caption = this.add.text(960, 140, '', textStyle(26, '#f7f1e6')).setOrigin(0.5);
+    this.add.text(1500, 800, '点击或空格继续', textStyle(22, '#cbbba6')).setOrigin(0.5).setDepth(4);
     const skip = makeButton(this, 1720, 70, 220, 56, '跳过开场', () => this.finish());
     skip.root.setDepth(5);
     this.show();
-    const zone = this.add.rectangle(960, 960, 1600, 200, 0x000000, 0.001).setInteractive();
+    const zone = this.add.rectangle(960, 920, 1920, 320, 0x000000, 0.001).setInteractive().setDepth(3);
     zone.on('pointerdown', () => this.advance());
     this.input.keyboard?.on('keydown-ENTER', () => this.advance());
     this.input.keyboard?.on('keydown-SPACE', () => this.advance());
