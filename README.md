@@ -9,7 +9,7 @@ npm install
 npx vite --host 127.0.0.1 --port 5173
 ```
 
-浏览器打开 http://127.0.0.1:5173/ 。第一次点击之后才出声。
+浏览器打开 http://127.0.0.1:5173/unwept/ 。第一次点击之后才出声。线上页面是 https://anqiihuang.github.io/unwept/ ，由 GitHub Actions 发布 `dist`。
 
 生产包：
 
@@ -17,6 +17,8 @@ npx vite --host 127.0.0.1 --port 5173
 npx vite build
 npx vite preview --host 127.0.0.1 --port 4173
 ```
+
+预览地址是 http://127.0.0.1:4173/unwept/ 。
 
 逻辑测试：
 
