@@ -1,10 +1,13 @@
 import { EVIDENCE, NOTES } from '../core/lines';
 import { canAccuse, compareGap, type GameState } from '../core/state';
 import type { HallUi } from './hallAfter';
+import type { CompareKind } from '../game/compareView';
 
 export interface StreetUi extends HallUi {
   fade(): Promise<void>;
   toTitle(): void;
+  showCompare(kind: CompareKind): void;
+  hideCompare(): void;
 }
 
 const HINTS = [
@@ -14,10 +17,12 @@ const HINTS = [
 ];
 
 export async function runStove(ui: StreetUi) {
+  ui.showCompare('stove');
+  const again = ui.state().aCompared;
   await ui.say([
     {
       speaker: 'narration',
-      text: '灶门缝里蹦出两粒火星。木柴爆了两下。右侧的哭腔还拖着，没有跟着断。',
+      text: again ? '两粒火星还是短的。右侧那一声仍比它们长。' : '灶门缝里蹦出两粒火星。木柴爆了两下。右侧的哭腔还拖着，没有跟着断。',
       caption: '〔灶门〕柴声短。〔右侧，隔着一扇窗〕哭声，断续。',
       sound: 'crackle',
     },
@@ -31,24 +36,32 @@ export async function runStove(ui: StreetUi) {
   ], '两种长短可以并排再听。听到了，也不等于找到声源。');
   if (!ui.alive() || !pick || pick === 'back') return;
   if (pick === 'shoes') {
+    const seen = ui.state().shoesSeen;
     ui.commit({ type: 'seeShoes' });
-    await ui.say([{ speaker: 'narration', text: '鞋尖都朝里，鞋底已经干了。只是寻常人家收着的鞋。' }]);
+    await ui.say([{ speaker: 'narration', text: seen ? '鞋还是朝里，鞋底是干的。' : '鞋尖都朝里，鞋底已经干了。只是寻常人家收着的鞋。' }]);
     return;
   }
   const first = !ui.state().aCompared;
   ui.commit({ type: 'compareA' });
-  await ui.say([
-    {
+  await ui.say(first
+    ? [
+      {
+        speaker: 'xiaoman',
+        text: '是柴在裂。可我刚才听见的，比这一下长。',
+        caption: pick === 'gather' ? '〔灶门〕火星收回缝里。哭腔仍比这两下长。' : '〔碗沿〕碗放稳了。柴是两下，哭腔是一声长的。',
+      },
+      { speaker: 'xiaoman', text: '先看看人。病了还得去叫嫂子。' },
+    ]
+    : [{
       speaker: 'xiaoman',
-      text: '是柴在裂。可我刚才听见的，比这一下长。',
-      caption: pick === 'gather' ? '〔灶门〕火星收回缝里。哭腔仍比这两下长。' : '〔碗沿〕碗放稳了。柴是两下，哭腔是一声长的。',
-    },
-    { speaker: 'xiaoman', text: '先看看人。病了还得去叫嫂子。' },
-  ]);
+      text: '还是比这一下长。',
+      caption: '〔灶门〕两下短。〔右侧〕一声长的。',
+    }]);
   if (first) await ui.showNote('灶门', '木柴爆了两下就断。右侧的哭腔比这一下长。声源还没写。');
 }
 
 export async function runWindow(ui: StreetUi) {
+  if (ui.state().bLampLow) ui.showCompare('asleep');
   if (!ui.state().bLampLow) {
     const lower = await ui.choose('窗左', [
       { id: 'low', label: '把灯放低' },
@@ -56,31 +69,39 @@ export async function runWindow(ui: StreetUi) {
     ], '灯还照在玻璃上，只照出自己半张脸。');
     if (lower !== 'low' || !ui.alive()) return;
     ui.commit({ type: 'lowerLamp' });
+    ui.showCompare('asleep');
     await ui.say([
       { speaker: 'narration', text: '反光挪到窗下。屋里两个人睡在一床宽被子里。左边那个人把被角掖到右边那个人肩上。' },
     ]);
+  } else if (!ui.state().bBreath) {
+    await ui.say([{ speaker: 'narration', text: '灯还放在窗下。两个人仍睡着。' }]);
   }
   if (!ui.alive()) return;
   const pick = await ui.choose('窗左', [
     { id: 'breath', label: '比一比被角' },
     { id: 'knock', label: '先敲窗问问' },
     { id: 'back', label: '离开' },
-  ]);
+  ], ui.state().bBreath ? '被角的起落还在。再看不会把他们叫醒。' : '');
   if (!ui.alive() || !pick || pick === 'back') return;
   if (pick === 'knock') {
+    const knocked = ui.state().bKnocked;
     ui.commit({ type: 'knockWindow' });
-    await ui.say([
-      { speaker: 'narration', text: '食指碰到窗框。屋里的人仍慢慢呼吸。她没有敲第二下。' },
-      { speaker: 'xiaoman', text: '两个人都睡着。再听一回，别把他们叫醒。' },
-    ]);
+    ui.showCompare('asleep');
+    await ui.say(knocked
+      ? [{ speaker: 'narration', text: '指节还停在木框前。屋里的呼吸没有停。' }]
+      : [
+        { speaker: 'narration', text: '食指碰到窗框。屋里的人仍慢慢呼吸。她没有敲第二下。' },
+        { speaker: 'xiaoman', text: '两个人都睡着。再听一回，别把他们叫醒。' },
+      ]);
     return;
   }
   const first = !ui.state().bBreath;
   ui.commit({ type: 'compareBreath' });
+  ui.showCompare('quilt');
   await ui.say([
     {
       speaker: 'xiaoman',
-      text: '这一声还没完，他都换过两口气了。',
+      text: first ? '这一声还没完，他都换过两口气了。' : '被角仍是起、落、再起。这一声还连着。',
       caption: '〔窗内〕被角起、落，再起。〔窗右〕哭腔仍连着。',
       sound: 'cry',
     },
@@ -103,6 +124,7 @@ export async function runBed(ui: StreetUi) {
     return;
   }
   if (!ui.state().cEdge) {
+    ui.showCompare('edge');
     await ui.say([
       { speaker: 'narration', text: '从窗左望去，床头有一线水亮。光被木棂截成两截。第一眼只看见亮边。' },
     ]);
@@ -115,6 +137,7 @@ export async function runBed(ui: StreetUi) {
     if (again !== 'pane' || !ui.alive()) return;
     await revealBowl(ui);
   } else if (!ui.state().cBowl) {
+    ui.showCompare('edge');
     const again = await ui.choose('床头仍是亮边', [
       { id: 'pane', label: '再看窗格' },
       { id: 'back', label: '离开' },
@@ -129,6 +152,7 @@ export async function runBed(ui: StreetUi) {
 async function revealBowl(ui: StreetUi) {
   const first = !ui.state().cBowl;
   ui.commit({ type: 'lookPane' });
+  ui.showCompare('bowl');
   await ui.say([
     { speaker: 'narration', text: '灯往身后偏了偏。木棂上的反光退出。枕头上方的木凳上，一只普通饭碗露了出来。' },
     { speaker: 'xiaoman', text: '人躺着没挪。响的地方，比枕头高一点。' },
@@ -138,6 +162,7 @@ async function revealBowl(ui: StreetUi) {
 
 async function bedMenu(ui: StreetUi) {
   while (ui.alive() && !ui.state().pz03Done) {
+    ui.showCompare(ui.state().cRipple ? 'ripple' : 'bowl');
     const pick = await ui.choose('床头窗', [
       { id: 'bowl', label: '收起自己的碗' },
       { id: 'breath', label: '再看被角' },
@@ -161,10 +186,11 @@ async function bedMenu(ui: StreetUi) {
     if (pick === 'breath') {
       const first = !ui.state().bBreath;
       ui.commit({ type: 'compareBreath' });
+      ui.showCompare('quilt');
       await ui.say([
         {
           speaker: 'narration',
-          text: '右边那张嘴仍闭着。被角已落，哭腔才到尾音。',
+          text: first ? '右边那张嘴仍闭着。被角已落，哭腔才到尾音。' : '被角仍起落两次。哭腔还是连着的。',
           caption: '〔窗内〕被角起、落，再起。〔窗右〕哭腔仍连着。',
         },
       ]);
@@ -179,10 +205,11 @@ async function bedMenu(ui: StreetUi) {
 async function replayStove(ui: StreetUi) {
   const first = !ui.state().aCompared;
   ui.commit({ type: 'compareA' });
+  ui.showCompare('stove');
   await ui.say([
     {
       speaker: 'narration',
-      text: '灶门又爆了两下。火星落地之后，右侧的哭音才重新起来。',
+      text: first ? '灶门又爆了两下。火星落地之后，右侧的哭音才重新起来。' : '还是两下短的，旁边一声长的。',
       caption: '〔灶门〕两下短的。〔窗右〕一声长的。两段并排，没有写成结论。',
       sound: 'crackle',
     },
@@ -193,10 +220,11 @@ async function replayStove(ui: StreetUi) {
 async function confirmRipple(ui: StreetUi) {
   const first = !ui.state().cRipple;
   ui.commit({ type: 'confirmRipple' });
+  ui.showCompare('ripple');
   await ui.say([
     {
       speaker: 'xiaoman',
-      text: '我先收起来。看你还响不响。',
+      text: first ? '我先收起来。看你还响不响。' : '碗仍在背后。窗里那一圈还跟着这一声。',
       caption: '〔近处〕哭腔起，窗后的一圈水纹同时起。〔窗左〕被角随后才落。',
       sound: 'ripple-sparse',
     },
@@ -226,6 +254,7 @@ async function pointCry(ui: StreetUi) {
     }
     const result = ui.commit({ type: 'accuse', which: pick === 'bowl' ? 'bowl' : pick === 'person' ? 'person' : 'wood' });
     if (!result.ok && result.code === 'wrong-wood') {
+      ui.showCompare('stove');
       await ui.say([
         { speaker: 'narration', text: '火星迸一下，没有哭声。火星早落地了，右侧的哭音才重新起来。', caption: '〔灶门〕柴声已停。〔窗右〕哭腔还在。' },
         { speaker: 'xiaoman', text: '柴一声一声地断。右边这个音，火星落下去它还在。' },
@@ -233,6 +262,7 @@ async function pointCry(ui: StreetUi) {
       continue;
     }
     if (!result.ok && result.code === 'wrong-person') {
+      ui.showCompare('quilt');
       await ui.say([
         { speaker: 'narration', text: '回到窗左。右边的人掖被时嘴仍闭着。被角已落，哭腔才到尾音。举起的手离开窗框。', caption: '〔窗内〕嘴闭着。〔窗右〕哭腔还在尾音。' },
         { speaker: 'xiaoman', text: '他嘴没张。我把人吵醒，倒是我的不是了。' },
@@ -240,6 +270,7 @@ async function pointCry(ui: StreetUi) {
       continue;
     }
     if (result.ok) {
+      ui.showCompare('ripple');
       await ui.say([
         { speaker: 'narration', text: '两只碗都看得见。小满把自己的碗拿远。窗里那一圈水照样走到底。伸出的手改成托住自己的碗底。' },
         { speaker: 'xiaoman', text: '是你们枕头边上那只碗。' },
@@ -260,6 +291,7 @@ async function pointCry(ui: StreetUi) {
 }
 
 export async function runEnding(ui: StreetUi) {
+  ui.showCompare('ripple');
   await ui.say([
     { speaker: 'narration', text: '小满退半步。灯光回到脚边。窗里的人还睡着。桂芬在街那头探出半个身子，手里捏着一块起锅盖的布。' },
     { speaker: 'guifen', text: '怎么了，要我拿件衣裳来吗？' },
@@ -268,6 +300,7 @@ export async function runEnding(ui: StreetUi) {
     { speaker: 'narration', text: '隔了半拍，更远的地方又响了一声。传桶的人和井都在画外。', caption: '〔更远处〕又一声。', sound: 'bucket' },
   ]);
   if (!ui.alive()) return;
+  ui.hideCompare();
   ui.commit({ type: 'finishDemo' });
   await ui.fade();
   if (!ui.alive()) return;
@@ -292,12 +325,14 @@ async function endMenu(ui: StreetUi) {
       await ui.showNote('这次记下的', reviewText(ui.state()));
       continue;
     }
+    ui.showCompare('ripple');
     await ui.say([
       { speaker: 'narration', text: '窗左，被角又起又落。床头那只碗上的水纹仍跟着哭腔走到底。人还睡着。' },
       { speaker: 'xiaoman', text: '是你们枕头边上那只碗。' },
       { speaker: 'guifen', text: '怎么了，要我拿件衣裳来吗？' },
       { speaker: 'xiaoman', text: '不用。让他们睡。' },
     ]);
+    ui.hideCompare();
     ui.commit({ type: 'finishDemo' });
   }
 }

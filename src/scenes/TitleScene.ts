@@ -70,9 +70,9 @@ export class TitleScene extends Phaser.Scene {
   private openSettings() {
     const settings = { ...getSettings() };
     const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.55).setDepth(20).setInteractive();
-    const card = this.add.rectangle(960, 520, 860, 520, 0x241e18, 0.98).setStrokeStyle(2, 0xd9c7a4).setDepth(21);
-    const title = this.add.text(960, 320, '设置', textStyle(40)).setOrigin(0.5).setDepth(22);
-    const body = this.add.text(960, 470, '', textStyle(28)).setOrigin(0.5).setDepth(22);
+    const card = this.add.rectangle(960, 540, 900, 700, 0x241e18, 0.98).setStrokeStyle(2, 0xd9c7a4).setDepth(21);
+    const title = this.add.text(960, 280, '设置', textStyle(40)).setOrigin(0.5).setDepth(22);
+    const body = this.add.text(960, 420, '', textStyle(28)).setOrigin(0.5).setDepth(22);
     const paint = () => {
       body.setText(
         [
@@ -95,26 +95,26 @@ export class TitleScene extends Phaser.Scene {
       return b;
     };
     const buttons = [
-      row(620, '音量 -', () => (settings.master = Math.max(0, Math.round((settings.master - 0.1) * 10) / 10))),
-      row(690, '音量 +', () => (settings.master = Math.min(1, Math.round((settings.master + 0.1) * 10) / 10))),
+      row(560, '音量 -', () => (settings.master = Math.max(0, Math.round((settings.master - 0.1) * 10) / 10))),
+      row(630, '音量 +', () => (settings.master = Math.min(1, Math.round((settings.master + 0.1) * 10) / 10))),
     ];
-    const toggles = makeButton(this, 700, 780, 240, 56, '字幕', () => {
+    const toggles = makeButton(this, 700, 720, 220, 56, '字幕', () => {
       settings.subtitles = !settings.subtitles;
       setSettings(settings);
       paint();
     });
-    const size = makeButton(this, 960, 780, 200, 56, '字号', () => {
+    const size = makeButton(this, 960, 720, 180, 56, '字号', () => {
       settings.largeText = !settings.largeText;
       setSettings(settings);
       paint();
     });
-    const motion = makeButton(this, 1220, 780, 240, 56, '动态', () => {
+    const motion = makeButton(this, 1220, 720, 220, 56, '动态', () => {
       settings.reduceMotion = !settings.reduceMotion;
       setSettings(settings);
       paint();
     });
     [toggles, size, motion].forEach((b) => b.root.setDepth(22));
-    const close = makeButton(this, 960, 860, 240, 56, '返回', () => {
+    const close = makeButton(this, 960, 810, 240, 56, '返回', () => {
       dim.destroy();
       card.destroy();
       title.destroy();

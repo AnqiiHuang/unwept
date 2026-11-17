@@ -7,6 +7,7 @@ import { createActor, setBowl, syncActor } from '../game/actors';
 import { FOOT, LAYOUT } from '../game/layout';
 import { commit, getSettings, getState, setSettings, setState } from '../game/session';
 import { paintHall, paintPro01, paintPro02, paintStreet } from '../game/scenery';
+import { CompareView, type CompareKind } from '../game/compareView';
 import { runBed, runDemoMenu, runStove, runStreetEnd, runWindow, type StreetUi } from '../data/street';
 import { FONT, makeButton, textStyle } from '../ui/widgets';
 
@@ -67,6 +68,8 @@ export class WorldScene extends Phaser.Scene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private sceneId: SceneId = 'PRO-01';
   private metLatch = false;
+  private compareView?: CompareView;
+  private keyLatch = false;
 
   constructor() {
     super('world');
@@ -84,6 +87,8 @@ export class WorldScene extends Phaser.Scene {
     this.dialogRoot = undefined;
     this.choiceRoot = undefined;
     this.panelRoot = undefined;
+    this.compareView?.destroy();
+    this.compareView = undefined;
     this.sceneId = getState().scene;
     this.facing = getState().facing;
     const area = this.sceneId === 'PRO-01' ? LAYOUT.pro01 : this.sceneId === 'PRO-02' ? LAYOUT.pro02 : this.sceneId === 'CH1-03' ? LAYOUT.street : LAYOUT.hall;
@@ -141,7 +146,31 @@ export class WorldScene extends Phaser.Scene {
     const kb = this.input.keyboard;
     if (kb) {
       kb.addCapture(['TAB', 'SPACE', 'UP', 'DOWN', 'LEFT', 'RIGHT']);
-      this.keys = kb.addKeys('A,D,LEFT,RIGHT,E,ENTER,SPACE,TAB,I,J,ESC,ONE,TWO,THREE,FOUR,B') as Record<string, Phaser.Input.Keyboard.Key>;
+      this.keys = kb.addKeys('A,D,LEFT,RIGHT,E,ENTER,SPACE,TAB,I,J,ESC,ONE,TWO,THREE,FOUR,FIVE,B') as Record<string, Phaser.Input.Keyboard.Key>;
+      const tap = (event: KeyboardEvent) => {
+        if (event.repeat) return;
+        if (this.mode === 'dialog' && (event.code === 'Enter' || event.code === 'Space' || event.code === 'KeyE' || event.code === 'Escape')) {
+          this.keyLatch = true;
+          this.advanceDialog();
+        } else if ((this.mode === 'panel' || this.mode === 'pause') && event.code === 'Escape') {
+          this.keyLatch = true;
+          this.closePanel();
+        } else if (this.mode === 'choice') {
+          const nums = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
+          const index = nums.indexOf(event.code);
+          if (index >= 0 && this.choiceOptions[index]) {
+            this.keyLatch = true;
+            this.pickChoice(this.choiceOptions[index].id);
+          } else if (event.code === 'Enter' || event.code === 'Space' || event.code === 'KeyE') {
+            const option = this.choiceOptions[this.choiceIndex];
+            if (option) {
+              this.keyLatch = true;
+              this.pickChoice(option.id);
+            }
+          }
+        }
+      };
+      kb.on('keydown', tap);
     }
     this.syncProps();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -159,6 +188,7 @@ export class WorldScene extends Phaser.Scene {
     this.player.scaleX = this.facing;
     syncActor(this.player, this.moving, this.time.now, this.bowlHigh);
     this.syncMarkers();
+    this.compareView?.tick(delta);
     this.objectiveText.setText(objective(getState()));
     this.helpText.setVisible(this.mode === 'play');
     this.promptText.setVisible(this.mode === 'play');
@@ -168,21 +198,20 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private readKeys() {
+    if (this.keyLatch) {
+      this.keyLatch = false;
+      return;
+    }
     const down = (name: string) => this.keys?.[name] && Phaser.Input.Keyboard.JustDown(this.keys[name]);
     if (down('ESC')) {
-      if (this.mode === 'dialog') this.advanceDialog();
-      else if (this.mode === 'panel' || this.mode === 'pause') this.closePanel();
-      else if (this.mode === 'play') this.openPause();
+      if (this.mode === 'play') this.openPause();
       return;
     }
-    if (this.mode === 'dialog' && (down('E') || down('ENTER') || down('SPACE'))) {
-      this.advanceDialog();
-      return;
-    }
+    if (this.mode === 'dialog') return;
     if (this.mode === 'choice') {
       if (down('LEFT') || down('A')) this.choiceIndex = (this.choiceIndex + this.choiceOptions.length - 1) % this.choiceOptions.length;
       if (down('RIGHT') || down('D')) this.choiceIndex = (this.choiceIndex + 1) % this.choiceOptions.length;
-      const nums = ['ONE', 'TWO', 'THREE', 'FOUR'];
+      const nums = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
       nums.forEach((name, i) => {
         if (down(name) && this.choiceOptions[i]) this.pickChoice(this.choiceOptions[i].id);
       });
@@ -355,11 +384,11 @@ export class WorldScene extends Phaser.Scene {
     }
     if (s.bBreath) {
       this.props.fillStyle(0xd9d3c8, 0.95);
-      this.props.fillRect(L.window - 20, 560, 36, 8);
-      this.props.fillRect(L.window + 28, 548, 36, 8);
-      this.props.fillRect(L.window + 76, 560, 36, 8);
+      this.props.fillRect(L.window - 80, 420, 28, 6);
+      this.props.fillRect(L.window - 40, 438, 28, 6);
+      this.props.fillRect(L.window, 420, 28, 6);
       this.props.fillStyle(0xd7c7a4, 0.9);
-      this.props.fillRect(L.window + 130, 552, 70, 6);
+      this.props.fillRect(L.window + 40, 428, 64, 5);
     }
     if (s.cEdge && !s.cBowl) {
       this.props.fillStyle(0xf2e2b0, 0.8);
@@ -402,7 +431,7 @@ export class WorldScene extends Phaser.Scene {
       const spot = this.spots[i];
       const on = spot.available();
       marker.setVisible(on);
-      marker.setPosition(spot.x, FOOT - 200 - (i % 4) * 36);
+      marker.setPosition(spot.x, FOOT - 150 - (i % 5) * 72);
       const near = on && Math.abs(this.player.x - spot.x) <= spot.range;
       marker.setAlpha(near ? 1 : 0.25);
     });
@@ -434,19 +463,20 @@ export class WorldScene extends Phaser.Scene {
     const root = this.add.container(spot.x, FOOT - 210).setDepth(28);
     const g = this.add.graphics();
     g.fillStyle(0xf3e2b8, 0.95);
-    g.fillTriangle(0, 18, -10, -2, 10, -2);
-    const label = this.add.text(0, -36, spot.label, textStyle(22, '#f8f1e4')).setOrigin(0.5);
+    g.fillTriangle(0, 16, -9, -2, 9, -2);
+    const label = this.add.text(0, -28, spot.label, textStyle(22, '#f8f1e4')).setOrigin(0.5);
     root.add([g, label]);
-    root.setSize(160, 120);
+    root.setSize(148, 64);
     const ox = root.displayOriginX;
     const oy = root.displayOriginY;
-    root.setInteractive(new Phaser.Geom.Rectangle(ox - 80, oy - 90, 160, 130), Phaser.Geom.Rectangle.Contains);
+    root.setInteractive(new Phaser.Geom.Rectangle(ox - 74, oy - 42, 148, 60), Phaser.Geom.Rectangle.Contains);
     root.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       pointer.event?.stopPropagation?.();
       if (this.mode !== 'play') return;
       if (Math.abs(this.player.x - spot.x) <= spot.range) spot.use();
       else {
-        const beside = spot.x + (this.player.x < spot.x ? -90 : 90);
+        const gap = Math.min(80, Math.max(16, spot.range - 12));
+        const beside = spot.x + (this.player.x < spot.x ? -gap : gap);
         this.targetX = Phaser.Math.Clamp(beside, this.minX, this.maxX);
         this.pending = spot.id;
       }
@@ -566,14 +596,20 @@ export class WorldScene extends Phaser.Scene {
     this.choiceOptions = options;
     this.choiceIndex = 0;
     this.choiceRoot?.destroy();
+    const two = options.length > 4;
     const root = this.add.container(0, 0).setScrollFactor(0).setDepth(210);
-    const box = this.add.rectangle(960, 930, 1880, 280, 0x140f0c, 0.94).setStrokeStyle(2, 0xd9c7a4);
-    const title = this.add.text(960, 820, prompt, textStyle(30)).setOrigin(0.5);
-    const extra = this.add.text(960, 870, detail, textStyle(24, '#e6d7c4')).setOrigin(0.5).setWordWrapWidth(1600, true);
+    const box = this.add.rectangle(960, two ? 860 : 890, 1880, two ? 340 : 250, 0x140f0c, 0.94).setStrokeStyle(2, 0xd9c7a4);
+    const title = this.add.text(960, two ? 720 : 800, prompt, textStyle(30)).setOrigin(0.5);
+    const extra = this.add.text(960, two ? 768 : 848, detail, textStyle(24, '#e6d7c4')).setOrigin(0.5).setWordWrapWidth(1500, true);
     root.add([box, title, extra]);
+    const columns = two ? Math.ceil(options.length / 2) : options.length;
     options.forEach((option, index) => {
-      const x = 960 - ((options.length - 1) * 300) / 2 + index * 300;
-      const button = makeButton(this, x, 990, 280, 64, `${index + 1} ${option.label}`, () => this.pickChoice(option.id));
+      const row = two ? Math.floor(index / columns) : 0;
+      const col = two ? index % columns : index;
+      const count = two && row === 1 ? options.length - columns : columns;
+      const x = 960 - ((count - 1) * 300) / 2 + col * 300;
+      const y = two ? 830 + row * 78 : 930;
+      const button = makeButton(this, x, y, 280, 64, `${index + 1} ${option.label}`, () => this.pickChoice(option.id));
       button.root.setScrollFactor(0);
       root.add(button.root);
     });
@@ -695,19 +731,19 @@ export class WorldScene extends Phaser.Scene {
     const L = LAYOUT.hall;
     const after = () => getState().pz01Done;
     this.spots = [
-      { id: 'out', x: L.door, range: 130, label: '回到村口', available: () => true, use: () => void this.go('PRO-02', LAYOUT.pro02.fromHall, -1) },
-      { id: 'lamp', x: L.door + 180, range: 110, label: '门廊的灯', available: after, use: () => void this.hallUi(runLamp) },
-      { id: 'book', x: L.stool - 70, range: 90, label: '作业本', available: after, use: () => void this.hallBook() },
-      { id: 'photo', x: L.photo, range: 110, label: '看合照', available: () => getState().hallIntro, use: () => void this.usePhoto() },
-      { id: 'body', x: L.photo + 90, range: 90, label: '看棺前', available: after, use: () => void this.hallUi(runBody) },
-      { id: 'stool', x: L.stool, range: 90, label: '矮凳', available: () => getState().hallIntro, use: () => void this.useStool() },
-      { id: 'gong', x: L.hook - 90, range: 80, label: '裹着的锣', available: after, use: () => void this.hallUi(runGong) },
-      { id: 'hook', x: L.hook, range: 90, label: '建军的高钩', available: () => getState().hallIntro, use: () => void this.usePlace('hook') },
-      { id: 'curtain', x: L.curtain, range: 120, label: '帷前', available: () => getState().hallIntro, use: () => void this.liftCurtain() },
-      { id: 'hint', x: L.guifen, range: 100, label: '问桂芬', available: () => getState().clothsGiven, use: () => void this.askHallGuifen() },
-      { id: 'guyu', x: L.guyu, range: 90, label: '谷雨', available: () => getState().hallIntro, use: () => void this.hallGuyu() },
-      { id: 'jianjun', x: L.jianjun, range: 100, label: '谷建军', available: () => getState().hallIntro, use: () => void this.hallJianjun() },
-      { id: 'street', x: L.street, range: 110, label: '去街窗', available: () => true, use: () => void this.leaveToStreet() },
+      { id: 'out', x: L.door, range: 100, label: '回到村口', available: () => true, use: () => void this.go('PRO-02', LAYOUT.pro02.fromHall, -1) },
+      { id: 'lamp', x: L.door + 180, range: 70, label: '门廊的灯', available: after, use: () => void this.hallUi(runLamp) },
+      { id: 'book', x: L.stool - 70, range: 48, label: '作业本', available: after, use: () => void this.hallBook() },
+      { id: 'photo', x: L.photo, range: 55, label: '看合照', available: () => getState().hallIntro, use: () => void this.usePhoto() },
+      { id: 'body', x: L.photo + 90, range: 45, label: '看棺前', available: after, use: () => void this.hallUi(runBody) },
+      { id: 'stool', x: L.stool, range: 48, label: '矮凳', available: () => getState().hallIntro, use: () => void this.useStool() },
+      { id: 'gong', x: L.hook - 90, range: 45, label: '裹着的锣', available: after, use: () => void this.hallUi(runGong) },
+      { id: 'hook', x: L.hook, range: 50, label: '建军的高钩', available: () => getState().hallIntro, use: () => void this.usePlace('hook') },
+      { id: 'curtain', x: L.curtain, range: 70, label: '帷前', available: () => getState().hallIntro, use: () => void this.liftCurtain() },
+      { id: 'hint', x: L.guifen, range: 70, label: '问桂芬', available: () => getState().clothsGiven, use: () => void this.askHallGuifen() },
+      { id: 'guyu', x: L.guyu, range: 70, label: '谷雨', available: () => getState().hallIntro, use: () => void this.hallGuyu() },
+      { id: 'jianjun', x: L.jianjun, range: 70, label: '谷建军', available: () => getState().hallIntro, use: () => void this.hallJianjun() },
+      { id: 'street', x: L.street, range: 70, label: '去街窗', available: () => true, use: () => void this.leaveToStreet() },
     ];
   }
 
@@ -715,10 +751,10 @@ export class WorldScene extends Phaser.Scene {
     const L = LAYOUT.street;
     this.spots = [
       { id: 'back', x: L.minX + 40, range: 120, label: '回门廊', available: () => true, use: () => void this.go('CH1-01', LAYOUT.hall.street - 80, -1) },
-      { id: 'stove', x: L.stove, range: 140, label: '听灶门', available: () => getState().streetIntro, use: () => void this.streetUi(runStove) },
-      { id: 'window', x: L.window, range: 140, label: '窗左', available: () => getState().streetIntro, use: () => void this.streetUi(runWindow) },
-      { id: 'bed', x: L.bed, range: 140, label: '床头窗', available: () => getState().streetIntro, use: () => void this.streetUi(runBed) },
-      { id: 'step', x: L.bed - 180, range: 100, label: '退半步', available: () => getState().pz03Done, use: () => void this.streetUi(runDemoMenu) },
+      { id: 'stove', x: L.stove, range: 120, label: '听灶门', available: () => getState().streetIntro, use: () => void this.streetUi(runStove) },
+      { id: 'window', x: L.window, range: 120, label: '窗左', available: () => getState().streetIntro, use: () => void this.streetUi(runWindow) },
+      { id: 'bed', x: L.bed, range: 110, label: '床头窗', available: () => getState().streetIntro, use: () => void this.streetUi(runBed) },
+      { id: 'step', x: L.bed - 260, range: 80, label: '退半步', available: () => getState().pz03Done, use: () => void this.streetUi(runDemoMenu) },
       { id: 'end', x: L.end, range: 140, label: '街尽头', available: () => true, use: () => void this.streetUi(runStreetEnd) },
     ];
   }
@@ -1178,18 +1214,35 @@ export class WorldScene extends Phaser.Scene {
     return {
       ...this.hallTalk(),
       fade: () => this.fadeStreet(),
+      showCompare: (kind) => this.showCompare(kind),
+      hideCompare: () => this.hideCompare(),
       toTitle: () => {
+        this.hideCompare();
         this.commitAction({ type: 'move', x: this.player.x, facing: this.facing });
         this.scene.start('title');
       },
     };
   }
 
+  private showCompare(kind: CompareKind) {
+    this.compareView?.destroy();
+    this.compareView = new CompareView(this, kind, getSettings().reduceMotion);
+  }
+
+  private hideCompare() {
+    this.compareView?.destroy();
+    this.compareView = undefined;
+  }
+
   private async streetUi(run: (ui: StreetUi) => Promise<void>) {
     this.mode = 'script';
-    await run(this.streetTalk());
-    if (this.alive && (this.mode === 'script' || this.mode === 'play')) this.mode = 'play';
-    this.syncProps();
+    try {
+      await run(this.streetTalk());
+    } finally {
+      this.hideCompare();
+      if (this.alive && (this.mode === 'script' || this.mode === 'play')) this.mode = 'play';
+      if (this.alive) this.syncProps();
+    }
   }
 
   private fadeStreet() {
@@ -1235,6 +1288,7 @@ export class WorldScene extends Phaser.Scene {
     const pages = paginateNote(body);
     return new Promise<void>((resolve) => {
       let index = 0;
+      if (this.mode !== 'panel') this.modeBefore = this.mode;
       this.mode = 'panel';
       const root = this.add.container(0, 0).setScrollFactor(0).setDepth(220);
       const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.35).setScrollFactor(0).setInteractive();
@@ -1288,12 +1342,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private openPause() {
-    if (this.mode !== 'play' && this.mode !== 'pause') return;
+    if (this.mode !== 'play') return;
     this.commitAction({ type: 'move', x: this.player.x, facing: this.facing });
+    this.modeBefore = 'play';
     this.mode = 'pause';
     const root = this.add.container(0, 0).setScrollFactor(0).setDepth(230);
     const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.45).setScrollFactor(0).setInteractive();
-    const card = this.add.rectangle(960, 520, 760, 560, 0x241c16, 0.98).setStrokeStyle(2, 0xd9c7a4);
+    const card = this.add.rectangle(960, 530, 820, 660, 0x241c16, 0.98).setStrokeStyle(2, 0xd9c7a4);
     const title = this.add.text(960, 300, '暂停', textStyle(40)).setOrigin(0.5);
     const info = this.add.text(960, 380, '', textStyle(26)).setOrigin(0.5);
     const paint = () => {
@@ -1333,7 +1388,10 @@ export class WorldScene extends Phaser.Scene {
   private closePanel() {
     this.panelRoot?.destroy();
     this.panelRoot = undefined;
-    if (this.mode === 'panel' || this.mode === 'pause') this.mode = 'play';
+    if (this.mode === 'panel' || this.mode === 'pause') {
+      const back = this.modeBefore;
+      this.mode = back === 'script' || back === 'play' ? back : 'play';
+    }
     const resolve = this.panelResolve;
     this.panelResolve = null;
     resolve?.();
