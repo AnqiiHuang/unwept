@@ -1,0 +1,358 @@
+[
+  {
+    "out": "public/art/v2_supplement/backgrounds/shore.png",
+    "size": [
+      3240,
+      1080
+    ],
+    "source": "backgrounds/reservoir_panorama.png",
+    "note": "exact scale; no soft fill",
+    "world": [
+      3240,
+      1080
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/backgrounds/shore_opening.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "crop_x": 440
+  },
+  {
+    "out": "public/art/v2_supplement/backgrounds/village_gate.png",
+    "size": [
+      3240,
+      1080
+    ],
+    "source": "backgrounds/village_entrance_panorama.png",
+    "note": "exact scale; no soft fill",
+    "world": [
+      3240,
+      1080
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/backgrounds/village_gate_opening.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "crop_x": 440
+  },
+  {
+    "out": "public/art/v2_supplement/backgrounds/village_street.png",
+    "size": [
+      3240,
+      1080
+    ],
+    "source": "backgrounds/street_panorama.png",
+    "note": "exact scale; no soft fill",
+    "world": [
+      3240,
+      1080
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/backgrounds/village_street_opening.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "crop_x": 440
+  },
+  {
+    "out": "public/art/v2_supplement/characters/xiaoman-lamp-1.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_lantern_walk_8poses",
+    "bounds": [
+      10,
+      306
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/characters/xiaoman-lamp-2.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_lantern_walk_8poses",
+    "bounds": [
+      325,
+      492
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/characters/xiaoman-lamp-3.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_lantern_walk_8poses",
+    "bounds": [
+      603,
+      747
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/characters/xiaoman-lamp-4.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_lantern_walk_8poses",
+    "bounds": [
+      875,
+      1029
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/characters/xiaoman-lamp-5.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_lantern_walk_8poses",
+    "bounds": [
+      1083,
+      1398
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/characters/xiaoman-lamp-6.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_lantern_walk_8poses",
+    "bounds": [
+      1414,
+      1576
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/characters/xiaoman-lamp-7.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_lantern_walk_8poses",
+    "bounds": [
+      1696,
+      1849
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/characters/xiaoman-lamp-8.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_lantern_walk_8poses",
+    "bounds": [
+      1978,
+      2134
+    ]
+  },
+  {
+    "note": "lantern walk not validated as seamless; 8 content-bounded frames",
+    "frame_bounds": [
+      [
+        10,
+        306
+      ],
+      [
+        325,
+        492
+      ],
+      [
+        603,
+        747
+      ],
+      [
+        875,
+        1029
+      ],
+      [
+        1083,
+        1398
+      ],
+      [
+        1414,
+        1576
+      ],
+      [
+        1696,
+        1849
+      ],
+      [
+        1978,
+        2134
+      ]
+    ]
+  },
+  {
+    "out": "public/art/v2_supplement/characters/portrait-xiaoman-calm.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "xiaoman_dialogue_4expressions",
+    "expr": "calm"
+  },
+  {
+    "out": "public/art/v2_supplement/characters/portrait-xiaoman-speak.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "xiaoman_dialogue_4expressions",
+    "expr": "speak"
+  },
+  {
+    "out": "public/art/v2_supplement/characters/portrait-xiaoman-alert.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "xiaoman_dialogue_4expressions",
+    "expr": "alert"
+  },
+  {
+    "out": "public/art/v2_supplement/characters/portrait-xiaoman-low.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "xiaoman_dialogue_4expressions",
+    "expr": "low"
+  },
+  {
+    "out": "public/art/v2_supplement/effects/ripple-1.png",
+    "size": [
+      151,
+      50
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "ripple",
+    "cell": 0
+  },
+  {
+    "out": "public/art/v2_supplement/effects/ripple-2.png",
+    "size": [
+      253,
+      85
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "ripple",
+    "cell": 1
+  },
+  {
+    "out": "public/art/v2_supplement/effects/ripple-3.png",
+    "size": [
+      357,
+      114
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "ripple",
+    "cell": 2
+  },
+  {
+    "out": "public/art/v2_supplement/effects/ripple-4.png",
+    "size": [
+      379,
+      131
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "ripple",
+    "cell": 3
+  },
+  {
+    "out": "public/art/v2_supplement/effects/quilt-1.png",
+    "size": [
+      336,
+      301
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "quilt",
+    "cell": 0
+  },
+  {
+    "out": "public/art/v2_supplement/effects/quilt-2.png",
+    "size": [
+      336,
+      266
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "quilt",
+    "cell": 1
+  },
+  {
+    "out": "public/art/v2_supplement/effects/quilt-3.png",
+    "size": [
+      337,
+      217
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "quilt",
+    "cell": 2
+  },
+  {
+    "out": "public/art/v2_supplement/effects/quilt-4.png",
+    "size": [
+      336,
+      282
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "quilt",
+    "cell": 3
+  },
+  {
+    "out": "public/art/v2_supplement/effects/ember-1.png",
+    "size": [
+      130,
+      143
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "ember",
+    "cell": 0
+  },
+  {
+    "out": "public/art/v2_supplement/effects/ember-2.png",
+    "size": [
+      137,
+      187
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "ember",
+    "cell": 1
+  },
+  {
+    "out": "public/art/v2_supplement/effects/ember-3.png",
+    "size": [
+      170,
+      236
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "ember",
+    "cell": 2
+  },
+  {
+    "out": "public/art/v2_supplement/effects/ember-4.png",
+    "size": [
+      169,
+      123
+    ],
+    "source": "effects_ripple_quilt_embers",
+    "row": "ember",
+    "cell": 3
+  },
+  {
+    "out": "public/art/v2_supplement/references/jianjun_hidden_key_gesture.png",
+    "note": "pose reference only; NOT wired as scene-jianjun"
+  }
+]

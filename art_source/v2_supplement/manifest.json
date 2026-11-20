@@ -1,0 +1,58 @@
+[
+  {
+    "file": "backgrounds/reservoir_panorama.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGB",
+    "status": "source_art_requires_integration",
+    "note": "flattened background; not layered"
+  },
+  {
+    "file": "backgrounds/village_entrance_panorama.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGB",
+    "status": "source_art_requires_integration",
+    "note": "flattened background; not layered"
+  },
+  {
+    "file": "backgrounds/street_panorama.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGB",
+    "status": "source_art_requires_integration",
+    "note": "flattened background; not layered"
+  },
+  {
+    "file": "sheets/xiaoman_lantern_walk_8poses.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGBA",
+    "status": "source_art_requires_integration",
+    "note": "manual frame bounds and anchors required; not validated animation"
+  },
+  {
+    "file": "sheets/xiaoman_dialogue_4expressions.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGBA",
+    "status": "source_art_requires_integration",
+    "note": "manual frame bounds and anchors required; not validated animation"
+  },
+  {
+    "file": "sheets/effects_ripple_quilt_embers.png",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "status": "source_art_requires_integration",
+    "note": "manual frame bounds and anchors required; not validated animation"
+  },
+  {
+    "file": "references/jianjun_hidden_key_gesture.png",
+    "width": 1774,
+    "height": 887,
+    "mode": "RGBA",
+    "status": "source_art_requires_integration",
+    "note": "pose reference only; not full character"
+  }
+]

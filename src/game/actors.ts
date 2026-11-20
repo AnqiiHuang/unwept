@@ -150,7 +150,11 @@ export function createActor(scene: Phaser.Scene, kind: ActorKind) {
       root.setData('bowlFrames', bowlWalk.length ? bowlWalk : bowlStand ? [bowlStand] : []);
       root.setData('carryKey', carryStand);
       root.setData('carryFrames', carryWalk.length ? carryWalk : carryStand ? [carryStand] : []);
-      root.setData('lampKey', scene.textures.exists('scene-xiaoman-lamp') ? 'scene-xiaoman-lamp' : '');
+      const lampWalk = [1, 2, 3, 4, 5, 6, 7, 8]
+        .map((n) => `scene-xiaoman-lamp-${n}`)
+        .filter((k) => scene.textures.exists(k));
+      root.setData('lampKey', scene.textures.exists('scene-xiaoman-lamp') ? 'scene-xiaoman-lamp' : lampWalk[0] ?? '');
+      root.setData('lampFrames', lampWalk);
       root.setData(
         'packLampKey',
         scene.textures.exists('scene-xiaoman-pack-lamp') ? 'scene-xiaoman-pack-lamp' : '',
@@ -190,16 +194,20 @@ export function syncActor(actor: Phaser.GameObjects.Container, moving: boolean, 
   const bowlKey = actor.getData('bowlKey') as string | undefined;
   const carryKey = actor.getData('carryKey') as string | undefined;
   const lampKey = actor.getData('lampKey') as string | undefined;
+  const lampFrames = (actor.getData('lampFrames') as string[] | undefined) ?? [];
   const packLampKey = actor.getData('packLampKey') as string | undefined;
   const height = (actor.getData('bodyHeight') as number | undefined) ?? 360;
   const frameIndex = frames.length ? (moving ? Math.floor(time / 160) % frames.length : 0) : 0;
+  const lampIndex = lampFrames.length ? (moving ? Math.floor(time / 140) % lampFrames.length : 0) : 0;
 
   let key = standKey ?? frames[0];
   // 灯已借到且仍端碗：用背上有箱、手里有灯的合成帧，避免另画悬浮灯。
   if (lampOn && bowlOn && packLampKey) {
     key = packLampKey;
-  } else if (lampOn && lampKey && !bowlOn) {
-    key = lampKey;
+  } else if (lampOn && !bowlOn) {
+    // 提灯走路用补充包八帧；循环尚未验证无缝，明显跳变时以实玩为准。
+    if (moving && lampFrames.length) key = lampFrames[lampIndex];
+    else if (lampKey) key = lampKey;
   } else if (bowlOn) {
     if (moving && bowlFrames.length) key = bowlFrames[frameIndex % bowlFrames.length];
     else if (bowlKey) key = bowlKey;

@@ -4,7 +4,7 @@ import { EVIDENCE, ITEM_TEXT, LINES, NOTES, SPEAKER_NAME, TRAVEL_HINT, type Line
 import { runBody, runBook, runCommission, runGong, runLamp, runRite, runTestimony, type HallUi } from '../data/hallAfter';
 import { audio } from '../game/audio';
 import { createActor, setBowl, setCarry, setLamp, syncActor } from '../game/actors';
-import { FOOT, LAYOUT } from '../game/layout';
+import { FOOT, LAYOUT, footFor, type LayoutScene } from '../game/layout';
 import { commit, getSettings, getState, setSettings, setState } from '../game/session';
 import { paintHall, paintPro01, paintPro02, paintStreet } from '../game/scenery';
 import { CompareView, type CompareKind } from '../game/compareView';
@@ -73,6 +73,7 @@ export class WorldScene extends Phaser.Scene {
   private chestSprite?: Phaser.GameObjects.Image;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private sceneId: SceneId = 'PRO-01';
+  private foot = FOOT;
   private metLatch = false;
   private compareView?: CompareView;
   private keyLatch = false;
@@ -99,6 +100,7 @@ export class WorldScene extends Phaser.Scene {
     this.compareView = undefined;
     this.sceneId = getState().scene;
     this.facing = getState().facing;
+    this.foot = footFor(this.sceneId as LayoutScene);
     const area = this.sceneId === 'PRO-01' ? LAYOUT.pro01 : this.sceneId === 'PRO-02' ? LAYOUT.pro02 : this.sceneId === 'CH1-03' ? LAYOUT.street : LAYOUT.hall;
     this.worldW = area.world;
     this.minX = area.minX;
@@ -111,22 +113,25 @@ export class WorldScene extends Phaser.Scene {
     this.props = this.add.graphics().setDepth(12);
     this.carryBox = this.add.graphics().setDepth(24);
     this.player = createActor(this, 'xiaoman').setDepth(20);
-    this.player.setPosition(getState().x, FOOT);
+    // Old saves may keep x beyond the new 3240 panorama; clamp to walkable band.
+    const clampedX = Phaser.Math.Clamp(getState().x, this.minX, this.maxX);
+    this.player.setPosition(clampedX, this.foot);
+    if (clampedX !== getState().x) this.commitAction({ type: 'move', x: clampedX, facing: this.facing });
     this.player.scaleX = this.facing;
     if (this.sceneId === 'PRO-01') {
-      createActor(this, 'changgui').setPosition(LAYOUT.pro01.changgui, FOOT).setDepth(16);
-      createActor(this, 'guyu').setPosition(LAYOUT.pro01.stake + 70, FOOT).setDepth(16);
+      createActor(this, 'changgui').setPosition(LAYOUT.pro01.changgui, this.foot).setDepth(16);
+      createActor(this, 'guyu').setPosition(LAYOUT.pro01.stake + 70, this.foot).setDepth(16);
       this.buildPro01();
     } else if (this.sceneId === 'PRO-02') {
-      createActor(this, 'guifen').setPosition(LAYOUT.pro02.guifen, FOOT).setDepth(16);
-      createActor(this, 'guyu').setPosition(LAYOUT.pro02.guifen - 180, FOOT).setDepth(16);
+      createActor(this, 'guifen').setPosition(LAYOUT.pro02.guifen, this.foot).setDepth(16);
+      createActor(this, 'guyu').setPosition(LAYOUT.pro02.guifen - 180, this.foot).setDepth(16);
       this.buildPro02();
     } else if (this.sceneId === 'CH1-03') {
       this.buildStreet();
     } else {
-      createActor(this, 'guifen').setPosition(LAYOUT.hall.guifen, FOOT).setDepth(16);
-      createActor(this, 'guyu').setPosition(LAYOUT.hall.guyu, FOOT).setDepth(16);
-      createActor(this, 'jianjun').setPosition(LAYOUT.hall.jianjun, FOOT).setDepth(16);
+      createActor(this, 'guifen').setPosition(LAYOUT.hall.guifen, this.foot).setDepth(16);
+      createActor(this, 'guyu').setPosition(LAYOUT.hall.guyu, this.foot).setDepth(16);
+      createActor(this, 'jianjun').setPosition(LAYOUT.hall.jianjun, this.foot).setDepth(16);
       this.buildHall();
     }
     this.spots.forEach((spot) => this.markers.push(this.makeMarker(spot)));
@@ -216,7 +221,7 @@ export class WorldScene extends Phaser.Scene {
     this.readKeys();
     if (this.mode === 'play') this.move(dt);
     else this.moving = this.mode === 'script' ? this.moving : false;
-    this.player.y = FOOT + (this.moving && !getSettings().reduceMotion ? Math.sin(this.time.now / 90) * 4 : 0);
+    this.player.y = this.foot + (this.moving && !getSettings().reduceMotion ? Math.sin(this.time.now / 90) * 4 : 0);
     this.player.scaleX = this.facing;
     const state = getState();
     setCarry(this.player, this.carryingChest(state));
@@ -327,7 +332,7 @@ export class WorldScene extends Phaser.Scene {
     for (let i = 0; i < this.spots.length; i += 1) {
       const spot = this.spots[i];
       if (!spot.available()) continue;
-      const y = FOOT - 188 - (i % 5) * 72;
+      const y = this.foot - 188 - (i % 5) * 72;
       if (Math.abs(world.x - spot.x) <= 110 && world.y >= y - 80 && world.y <= y + 50) return spot;
     }
     return undefined;
@@ -352,11 +357,14 @@ export class WorldScene extends Phaser.Scene {
 
   private onGround(pointer: Phaser.Input.Pointer) {
     const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-    if (this.sceneId === 'PRO-01' && (world.x < LAYOUT.pro01.wetUntil || world.y > 1000)) {
-      this.wet(world.y > 1000 ? '这边是湿泥，看着亮，里头还软。' : '鞋尖陷进湿泥，小满把脚收回来。');
+    const pathTop = this.foot - 300;
+    const pathBot = this.foot + 90;
+    const mudBot = this.foot + 50;
+    if (this.sceneId === 'PRO-01' && (world.x < LAYOUT.pro01.wetUntil || world.y > mudBot)) {
+      this.wet(world.y > mudBot ? '这边是湿泥，看着亮，里头还软。' : '鞋尖陷进湿泥，小满把脚收回来。');
       return;
     }
-    if (world.y < 640 || world.y > 1020) {
+    if (world.y < pathTop || world.y > pathBot) {
       this.caption('点地面才能走。要查的话，点亮着的名字，或按 E。');
       return;
     }
@@ -369,7 +377,7 @@ export class WorldScene extends Phaser.Scene {
     this.wetAt = this.time.now;
     audio.play('mud');
     this.caption(`〔脚下〕${message}`);
-    const splash = this.add.circle(this.player.x, FOOT, 18, 0x3d4e55, 0.7).setDepth(30);
+    const splash = this.add.circle(this.player.x, this.foot, 18, 0x3d4e55, 0.7).setDepth(30);
     this.tweens.add({ targets: splash, scale: 2.2, alpha: 0, duration: getSettings().reduceMotion ? 80 : 420, onComplete: () => splash.destroy() });
   }
 
@@ -411,7 +419,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if (this.sceneId === 'PRO-02' && s.teaDecided && !s.drankOathWater) {
       this.props.fillStyle(0x4d4338, 0.85);
-      this.props.fillEllipse(LAYOUT.pro02.door + 30, FOOT + 8, 70, 18);
+      this.props.fillEllipse(LAYOUT.pro02.door + 30, this.foot + 8, 70, 18);
     }
     if (this.sceneId === 'CH1-01') {
       if (s.hookCloth === 'long') this.drawStrip(LAYOUT.hall.hook - 8, 530, 150);
@@ -428,9 +436,9 @@ export class WorldScene extends Phaser.Scene {
         }
         if (s.lampTaken) {
           this.props.fillStyle(0xc4552a, 1);
-          this.props.fillRoundedRect(LAYOUT.hall.door + 28, FOOT - 118, 18, 28, 3);
+          this.props.fillRoundedRect(LAYOUT.hall.door + 28, this.foot - 118, 18, 28, 3);
           this.props.fillStyle(0xf2d48a, 1);
-          this.props.fillCircle(LAYOUT.hall.door + 37, FOOT - 126, 6);
+          this.props.fillCircle(LAYOUT.hall.door + 37, this.foot - 126, 6);
         }
         const labels = ['五', '五', '五', '四'];
         labels.forEach((label, i) => {
@@ -496,24 +504,24 @@ export class WorldScene extends Phaser.Scene {
     if (this.textures.exists('prop-chest-closed')) {
       if (!this.chestSprite) {
         this.chestSprite = this.add
-          .image(x, FOOT, 'prop-chest-closed')
+          .image(x, this.foot, 'prop-chest-closed')
           .setOrigin(0.5, 1)
           .setDisplaySize(78, 52)
           .setDepth(12);
       }
-      this.chestSprite.setPosition(x, FOOT).setVisible(true);
+      this.chestSprite.setPosition(x, this.foot).setVisible(true);
       this.props.fillStyle(0x3a2a22, 0.35);
-      this.props.fillEllipse(x, FOOT + 6, 86, 16);
+      this.props.fillEllipse(x, this.foot + 6, 86, 16);
       return;
     }
     this.props.fillStyle(0x3a2a22, 0.35);
-    this.props.fillEllipse(x, FOOT + 6, 86, 16);
+    this.props.fillEllipse(x, this.foot + 6, 86, 16);
     this.props.fillStyle(0x6a4a34, 1);
-    this.props.fillRoundedRect(x - 34, FOOT - 46, 68, 46, 4);
+    this.props.fillRoundedRect(x - 34, this.foot - 46, 68, 46, 4);
     this.props.fillStyle(0x8a6244, 1);
-    this.props.fillRect(x - 34, FOOT - 26, 68, 8);
+    this.props.fillRect(x - 34, this.foot - 26, 68, 8);
     this.props.fillStyle(0xd7c39a, 1);
-    this.props.fillRoundedRect(x - 16, FOOT - 58, 32, 12, 3);
+    this.props.fillRoundedRect(x - 16, this.foot - 58, 32, 12, 3);
   }
 
   private drawStrip(x: number, y: number, h: number, needle = false) {
@@ -548,7 +556,7 @@ export class WorldScene extends Phaser.Scene {
       const spot = this.spots[i];
       const on = free && spot.available();
       marker.setVisible(on);
-      marker.setPosition(spot.x, FOOT - 188 - (i % 5) * 72);
+      marker.setPosition(spot.x, this.foot - 188 - (i % 5) * 72);
       const near = on && Math.abs(this.player.x - spot.x) <= spot.range;
       marker.setAlpha(near ? 1 : 0.5);
       const tri = marker.getAt(0) as Phaser.GameObjects.Graphics | undefined;
@@ -581,7 +589,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private makeMarker(spot: Spot) {
-    const root = this.add.container(spot.x, FOOT - 210).setDepth(46);
+    const root = this.add.container(spot.x, this.foot - 210).setDepth(46);
     const g = this.add.graphics();
     g.fillStyle(0xf3e2b8, 0.95);
     g.fillTriangle(0, 16, -9, -2, 9, -2);
@@ -629,6 +637,19 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  private portraitKeyFor(line: Line): string {
+    if (line.speaker !== 'xiaoman') return `portrait-${line.speaker}`;
+    const text = line.text;
+    if (/哭|按住|不——|掉了|松一松手/.test(text)) {
+      return this.textures.exists('portrait-xiaoman-low') ? 'portrait-xiaoman-low' : 'portrait-xiaoman';
+    }
+    if (/听|看|哪|谁|么？|？|热热嗓子|嫌吵/.test(text) || Boolean(line.caption)) {
+      return this.textures.exists('portrait-xiaoman-alert') ? 'portrait-xiaoman-alert' : 'portrait-xiaoman';
+    }
+    if (this.textures.exists('portrait-xiaoman-speak')) return 'portrait-xiaoman-speak';
+    return 'portrait-xiaoman';
+  }
+
   private say(lines: readonly Line[]): Promise<void> {
     if (!lines.length || !this.alive) return Promise.resolve();
     this.modeBefore = this.mode === 'dialog' ? this.modeBefore : this.mode;
@@ -660,7 +681,7 @@ export class WorldScene extends Phaser.Scene {
       this.advanceDialog();
     });
     const name = line.speaker === 'continuation' ? '续腔 · 身后，旧村一侧' : SPEAKER_NAME[line.speaker];
-    const portraitKey = `portrait-${line.speaker}`;
+    const portraitKey = this.portraitKeyFor(line);
     const paintedPortrait = this.textures.exists(portraitKey);
     const showPortrait = paintedPortrait || Boolean(PORTRAIT[line.speaker]);
     const bits: Phaser.GameObjects.GameObject[] = [catcher, box];
@@ -961,13 +982,13 @@ export class WorldScene extends Phaser.Scene {
     const count = dense ? 5 : 2;
     for (let i = 0; i < count; i++) {
       g.lineStyle(3, 0xd7f0f0, 0.85);
-      g.strokeEllipse(x, FOOT - 30, dense ? 18 + i * 12 : 28 + i * 34, dense ? 8 + i * 4 : 10 + i * 6);
+      g.strokeEllipse(x, this.foot - 30, dense ? 18 + i * 12 : 28 + i * 34, dense ? 8 + i * 4 : 10 + i * 6);
     }
     if (dense) {
       g.lineStyle(4, 0xf4ecdf, 0.9);
-      g.lineBetween(x + 10, FOOT - 90, x - 90, FOOT - 90);
-      g.lineBetween(x - 90, FOOT - 90, x - 74, FOOT - 100);
-      g.lineBetween(x - 90, FOOT - 90, x - 74, FOOT - 80);
+      g.lineBetween(x + 10, this.foot - 90, x - 90, this.foot - 90);
+      g.lineBetween(x - 90, this.foot - 90, x - 74, this.foot - 100);
+      g.lineBetween(x - 90, this.foot - 90, x - 74, this.foot - 80);
     }
     this.time.delayedCall(getSettings().reduceMotion ? 1200 : 2400, () => g.destroy());
   }

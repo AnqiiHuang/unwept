@@ -23,6 +23,8 @@ const NOTE: Record<CompareKind, string> = {
 export class CompareView {
   private readonly root: Phaser.GameObjects.Container;
   private readonly marks: Phaser.GameObjects.Graphics;
+  private readonly fx?: Phaser.GameObjects.Image;
+  private readonly scene: Phaser.Scene;
   private elapsed = 0;
 
   constructor(
@@ -30,6 +32,7 @@ export class CompareView {
     private readonly kind: CompareKind,
     private readonly reduce: boolean,
   ) {
+    this.scene = scene;
     this.root = scene.add.container(0, 0).setScrollFactor(0).setDepth(160);
     const card = scene.add.rectangle(960, 430, 920, 460, 0x14110e, 0.96).setStrokeStyle(2, 0xd9c7a4);
     const plateKey =
@@ -44,7 +47,7 @@ export class CompareView {
               : '';
     const bits: Phaser.GameObjects.GameObject[] = [card];
     if (plateKey && scene.textures.exists(plateKey)) {
-      bits.push(scene.add.image(760, 430, plateKey).setDisplaySize(360, 320).setDepth(1));
+      bits.push(scene.add.image(760, 430, plateKey).setDisplaySize(360, 320));
     }
     const tag = scene.add.text(980, 220, '近看', {
       fontFamily: '"Songti SC", serif',
@@ -63,6 +66,15 @@ export class CompareView {
       wordWrap: { width: 360 },
     });
     this.marks = scene.add.graphics();
+    // Low-amplitude fx overlays when cropped frames exist (not claimed seamless).
+    const fxPrefix = kind === 'stove' ? 'fx-ember' : kind === 'quilt' ? 'fx-quilt' : kind === 'ripple' ? 'fx-ripple' : '';
+    if (fxPrefix && scene.textures.exists(`${fxPrefix}-1`)) {
+      this.fx = scene.add.image(760, kind === 'stove' ? 480 : 400, `${fxPrefix}-1`).setAlpha(0.85);
+      if (kind === 'ripple') this.fx.setDisplaySize(220, 80);
+      else if (kind === 'quilt') this.fx.setDisplaySize(160, 140).setOrigin(0.5, 0).setPosition(700, 340);
+      else this.fx.setDisplaySize(90, 120);
+      bits.push(this.fx);
+    }
     this.root.add([...bits, tag, title, note, this.marks]);
     this.paint();
   }
@@ -80,6 +92,15 @@ export class CompareView {
   private paint() {
     const g = this.marks;
     g.clear();
+    if (this.fx) {
+      const prefix =
+        this.kind === 'stove' ? 'fx-ember' : this.kind === 'quilt' ? 'fx-quilt' : this.kind === 'ripple' ? 'fx-ripple' : '';
+      if (prefix) {
+        const frame = 1 + (Math.floor(this.elapsed / 0.35) % 4);
+        const key = `${prefix}-${frame}`;
+        if (this.scene.textures.exists(key) && this.fx.texture.key !== key) this.fx.setTexture(key);
+      }
+    }
     if (this.kind === 'stove') this.stove();
     else if (this.kind === 'quilt') this.quilt();
     else if (this.kind === 'edge') this.window(false);
