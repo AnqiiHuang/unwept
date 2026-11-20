@@ -29,7 +29,7 @@ export class OpeningScene extends Phaser.Scene {
     }
     this.grade = this.add.rectangle(960, 540, 1920, 1080, 0xc4846a, 0.12);
     this.add.rectangle(960, 900, 1920, 280, 0x120f0c, 0.82);
-    this.add.text(40, 28, '新增开场草稿　·　参考静帧，不是最终开场分镜', textStyle(22, '#f0e6d6'));
+    this.add.text(40, 28, '开场　·　新绘静帧', textStyle(22, '#f0e6d6'));
     this.speaker = this.add.text(80, 800, '', textStyle(26, '#d9c7a4'));
     this.body = this.add.text(80, 850, '', textStyle(getSettings().largeText ? 36 : 32)).setWordWrapWidth(1500, true);
     this.caption = this.add.text(960, 140, '', textStyle(26, '#f7f1e6')).setOrigin(0.5);

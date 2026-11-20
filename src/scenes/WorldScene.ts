@@ -3,7 +3,7 @@ import { apply, journalStatus, objective, travelBlock, type Action, type ApplyRe
 import { EVIDENCE, ITEM_TEXT, LINES, NOTES, SPEAKER_NAME, TRAVEL_HINT, type Line, type Speaker } from '../core/lines';
 import { runBody, runBook, runCommission, runGong, runLamp, runRite, runTestimony, type HallUi } from '../data/hallAfter';
 import { audio } from '../game/audio';
-import { createActor, setBowl, setCarry, syncActor } from '../game/actors';
+import { createActor, setBowl, setCarry, setLamp, syncActor } from '../game/actors';
 import { FOOT, LAYOUT } from '../game/layout';
 import { commit, getSettings, getState, setSettings, setState } from '../game/session';
 import { paintHall, paintPro01, paintPro02, paintStreet } from '../game/scenery';
@@ -69,6 +69,8 @@ export class WorldScene extends Phaser.Scene {
   private panelRoot?: Phaser.GameObjects.Container;
   private panelResolve: (() => void) | null = null;
   private bundleTexts: Phaser.GameObjects.Text[] = [];
+  private propSprites: Phaser.GameObjects.GameObject[] = [];
+  private chestSprite?: Phaser.GameObjects.Image;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private sceneId: SceneId = 'PRO-01';
   private metLatch = false;
@@ -218,6 +220,7 @@ export class WorldScene extends Phaser.Scene {
     this.player.scaleX = this.facing;
     const state = getState();
     setCarry(this.player, this.carryingChest(state));
+    setLamp(this.player, Boolean(state.lampTaken));
     syncActor(this.player, this.moving, this.time.now, this.bowlHigh);
     this.syncMarkers();
     this.compareView?.tick(delta);
@@ -392,11 +395,19 @@ export class WorldScene extends Phaser.Scene {
     setBowl(this.player, s.bowlTaken);
     this.bundleTexts.forEach((t) => t.destroy());
     this.bundleTexts = [];
+    this.propSprites.forEach((o) => o.destroy());
+    this.propSprites = [];
     this.props.clear();
     this.carryBox.clear();
     if (this.sceneId === 'PRO-01') {
-      if (this.carryingChest(s) && this.moving) this.drawChest(this.carryBox, this.player.x + this.facing * 78, FOOT - 176, false);
-      else if (!this.carryingChest(s)) this.drawChest(this.props, this.chestAnchor(s), FOOT - 18, true);
+      // 提箱走路/站住已画在角色帧里，行走时不再另画一只箱，避免双箱。
+      if (this.carryingChest(s)) {
+        this.chestSprite?.setVisible(false);
+      } else {
+        this.placeChest(this.chestAnchor(s));
+      }
+    } else {
+      this.chestSprite?.setVisible(false);
     }
     if (this.sceneId === 'PRO-02' && s.teaDecided && !s.drankOathWater) {
       this.props.fillStyle(0x4d4338, 0.85);
@@ -468,12 +479,7 @@ export class WorldScene extends Phaser.Scene {
       this.props.strokeCircle(L.bed + 40, 496, 16);
       this.props.strokeCircle(L.bed + 40, 496, 26);
     }
-    if (s.lampTaken) {
-      this.props.fillStyle(0xc4552a, 1);
-      this.props.fillRoundedRect(this.player.x + 34, FOOT - 70, 14, 20, 2);
-      this.props.fillStyle(0xf2d48a, 1);
-      this.props.fillCircle(this.player.x + 41, FOOT - 76, 4);
-    }
+    // 提灯已画在角色帧里，街景不再另画一盏灯。
   }
 
   private carryingChest(s: ReturnType<typeof getState>) {
@@ -486,22 +492,41 @@ export class WorldScene extends Phaser.Scene {
     return this.player.x + this.facing * 54;
   }
 
-  private drawChest(g: Phaser.GameObjects.Graphics, x: number, y: number, placed: boolean) {
-    if (placed) {
-      g.fillStyle(0x3a2a22, 0.35);
-      g.fillEllipse(x, FOOT + 6, 86, 16);
+  private placeChest(x: number) {
+    if (this.textures.exists('prop-chest-closed')) {
+      if (!this.chestSprite) {
+        this.chestSprite = this.add
+          .image(x, FOOT, 'prop-chest-closed')
+          .setOrigin(0.5, 1)
+          .setDisplaySize(78, 52)
+          .setDepth(12);
+      }
+      this.chestSprite.setPosition(x, FOOT).setVisible(true);
+      this.props.fillStyle(0x3a2a22, 0.35);
+      this.props.fillEllipse(x, FOOT + 6, 86, 16);
+      return;
     }
-    g.fillStyle(0x6a4a34, 1);
-    g.fillRoundedRect(x - 34, y - 28, 68, 46, 4);
-    g.fillStyle(0x8a6244, 1);
-    g.fillRect(x - 34, y - 8, 68, 8);
-    g.fillStyle(0xd7c39a, 1);
-    g.fillRoundedRect(x - 16, y - 40, 32, 12, 3);
-    g.lineStyle(3, 0xc4552a, 1);
-    g.strokeRect(x - 22, y - 4, 16, 12);
+    this.props.fillStyle(0x3a2a22, 0.35);
+    this.props.fillEllipse(x, FOOT + 6, 86, 16);
+    this.props.fillStyle(0x6a4a34, 1);
+    this.props.fillRoundedRect(x - 34, FOOT - 46, 68, 46, 4);
+    this.props.fillStyle(0x8a6244, 1);
+    this.props.fillRect(x - 34, FOOT - 26, 68, 8);
+    this.props.fillStyle(0xd7c39a, 1);
+    this.props.fillRoundedRect(x - 16, FOOT - 58, 32, 12, 3);
   }
 
   private drawStrip(x: number, y: number, h: number, needle = false) {
+    const key = needle ? 'prop-cloth-needle' : 'prop-cloth-long';
+    if (this.textures.exists(key)) {
+      const img = this.add
+        .image(x, y, key)
+        .setOrigin(0, 0)
+        .setDisplaySize(needle ? 36 : 42, h)
+        .setDepth(12);
+      this.propSprites.push(img);
+      return;
+    }
     this.props.fillStyle(0xf4f1ea, 0.95);
     this.props.fillRoundedRect(x, y, needle ? 16 : 22, h, 3);
     if (needle) {

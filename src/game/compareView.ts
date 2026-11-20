@@ -32,23 +32,38 @@ export class CompareView {
   ) {
     this.root = scene.add.container(0, 0).setScrollFactor(0).setDepth(160);
     const card = scene.add.rectangle(960, 430, 920, 460, 0x14110e, 0.96).setStrokeStyle(2, 0xd9c7a4);
-    const tag = scene.add.text(530, 220, '开发占位 · 近看', {
+    const plateKey =
+      kind === 'stove'
+        ? 'closeup-stove'
+        : kind === 'quilt' || kind === 'asleep'
+          ? 'closeup-window-bed'
+          : kind === 'edge'
+            ? 'closeup-window-lamp'
+            : kind === 'bowl' || kind === 'ripple'
+              ? 'closeup-bowl-bed'
+              : '';
+    const bits: Phaser.GameObjects.GameObject[] = [card];
+    if (plateKey && scene.textures.exists(plateKey)) {
+      bits.push(scene.add.image(760, 430, plateKey).setDisplaySize(360, 320).setDepth(1));
+    }
+    const tag = scene.add.text(980, 220, '近看', {
       fontFamily: '"Songti SC", serif',
       fontSize: '18px',
       color: '#b5a894',
     });
-    const title = scene.add.text(530, 248, TITLE[kind], {
+    const title = scene.add.text(980, 248, TITLE[kind], {
       fontFamily: '"Songti SC", serif',
       fontSize: '32px',
       color: '#f4ecdf',
     });
-    const note = scene.add.text(530, 600, NOTE[kind], {
+    const note = scene.add.text(980, 560, NOTE[kind], {
       fontFamily: '"Songti SC", serif',
       fontSize: '24px',
       color: '#e6d7c4',
+      wordWrap: { width: 360 },
     });
     this.marks = scene.add.graphics();
-    this.root.add([card, tag, title, note, this.marks]);
+    this.root.add([...bits, tag, title, note, this.marks]);
     this.paint();
   }
 

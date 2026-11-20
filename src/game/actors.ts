@@ -2,30 +2,6 @@ import Phaser from 'phaser';
 
 export type ActorKind = 'xiaoman' | 'changgui' | 'guyu' | 'guifen' | 'jianjun';
 
-function drawBowl(g: Phaser.GameObjects.Graphics) {
-  g.clear();
-  g.fillStyle(0xc4a48c, 1);
-  g.fillRoundedRect(-20, 2, 30, 11, 4);
-  g.fillRoundedRect(6, 1, 7, 13, 3);
-  g.fillRoundedRect(14, 3, 6, 11, 3);
-  g.fillStyle(0xc9b8a4, 1);
-  g.fillEllipse(0, 5, 42, 12);
-  g.fillStyle(0xe7e1d4, 1);
-  g.fillEllipse(0, 0, 38, 10);
-  g.lineStyle(2, 0xb7aa98, 1);
-  g.strokeEllipse(0, 0, 38, 10);
-  g.fillStyle(0x8fb4c4, 0.9);
-  g.fillEllipse(0, 1, 22, 5);
-  g.fillStyle(0xc4552a, 1);
-  g.fillRect(12, -2, 6, 3);
-}
-
-const WALK_HANDS = [
-  { hold: [58, -182], other: [-22, -168] },
-  { hold: [54, -178], other: [-32, -166] },
-  { hold: [16, -164], other: [2, -162] },
-];
-
 function drawXiaoman(g: Phaser.GameObjects.Graphics) {
   g.fillStyle(0x241c16, 0.35);
   g.fillEllipse(0, -6, 70, 16);
@@ -86,19 +62,16 @@ function drawGuyu(g: Phaser.GameObjects.Graphics) {
 
 function drawGuifen(g: Phaser.GameObjects.Graphics) {
   g.fillStyle(0x241c16, 0.3);
-  g.fillEllipse(0, -6, 64, 14);
-  g.fillStyle(0x3a332e, 1);
-  g.fillRoundedRect(-16, -84, 14, 70, 4);
-  g.fillRoundedRect(4, -84, 14, 70, 4);
-  g.fillStyle(0x6d7278, 1);
-  g.fillRoundedRect(-30, -170, 60, 94, 8);
-  g.fillStyle(0xc2b6a4, 0.95);
-  g.fillRoundedRect(-22, -150, 44, 50, 4);
-  g.fillStyle(0xf0d0b4, 1);
-  g.fillCircle(8, -196, 18);
-  g.fillStyle(0x2a211c, 1);
-  g.fillCircle(6, -206, 16);
-  g.fillEllipse(0, -188, 22, 12);
+  g.fillEllipse(0, -4, 60, 12);
+  g.fillStyle(0x3a342c, 1);
+  g.fillRoundedRect(-16, -70, 14, 58, 4);
+  g.fillRoundedRect(4, -70, 14, 58, 4);
+  g.fillStyle(0x5c4034, 1);
+  g.fillRoundedRect(-28, -150, 56, 84, 8);
+  g.fillStyle(0xf0d2bc, 1);
+  g.fillCircle(6, -172, 16);
+  g.fillStyle(0x1b1918, 1);
+  g.fillEllipse(0, -184, 28, 14);
 }
 
 function drawJianjun(g: Phaser.GameObjects.Graphics) {
@@ -142,10 +115,16 @@ function fitHeight(sprite: Phaser.GameObjects.Image, height: number) {
   sprite.setDisplaySize(height * aspect, height);
 }
 
+function pickKey(scene: Phaser.Scene, preferred: string, fallback: string) {
+  if (scene.textures.exists(preferred)) return preferred;
+  if (scene.textures.exists(fallback)) return fallback;
+  return preferred;
+}
+
 export function createActor(scene: Phaser.Scene, kind: ActorKind) {
   const root = scene.add.container(0, 0);
   const height = SCENE_HEIGHT[kind];
-  const key = kind === 'xiaoman' ? 'scene-xiaoman-1' : `scene-${kind}`;
+  const key = kind === 'xiaoman' ? pickKey(scene, 'scene-xiaoman-stand', 'scene-xiaoman-1') : `scene-${kind}`;
   if (scene.textures.exists(key)) {
     const sprite = scene.add.image(0, 0, key).setOrigin(0.5, 1);
     fitHeight(sprite, height);
@@ -155,20 +134,33 @@ export function createActor(scene: Phaser.Scene, kind: ActorKind) {
     root.setData('sprite', sprite);
     root.setData('bodyHeight', height);
     if (kind === 'xiaoman') {
-      root.setData('frames', ['scene-xiaoman-1', 'scene-xiaoman-2', 'scene-xiaoman-3']);
-      root.setData('bowlKey', 'scene-xiaoman-bowl');
-      root.setData('carryKey', 'scene-xiaoman-carry');
+      const stand = pickKey(scene, 'scene-xiaoman-stand', 'scene-xiaoman-1');
+      const walk = ['scene-xiaoman-1', 'scene-xiaoman-2', 'scene-xiaoman-3'].filter((k) => scene.textures.exists(k));
+      const bowlStand = pickKey(scene, 'scene-xiaoman-bowl', 'scene-xiaoman-bowl');
+      const bowlWalk = ['scene-xiaoman-bowl-1', 'scene-xiaoman-bowl-2', 'scene-xiaoman-bowl-3'].filter((k) =>
+        scene.textures.exists(k),
+      );
+      const carryStand = pickKey(scene, 'scene-xiaoman-carry', 'scene-xiaoman-carry');
+      const carryWalk = ['scene-xiaoman-carry-1', 'scene-xiaoman-carry-2', 'scene-xiaoman-carry-3'].filter((k) =>
+        scene.textures.exists(k),
+      );
+      root.setData('standKey', stand);
+      root.setData('frames', walk.length ? walk : [stand]);
+      root.setData('bowlKey', bowlStand);
+      root.setData('bowlFrames', bowlWalk.length ? bowlWalk : bowlStand ? [bowlStand] : []);
+      root.setData('carryKey', carryStand);
+      root.setData('carryFrames', carryWalk.length ? carryWalk : carryStand ? [carryStand] : []);
+      root.setData('lampKey', scene.textures.exists('scene-xiaoman-lamp') ? 'scene-xiaoman-lamp' : '');
+      root.setData(
+        'packLampKey',
+        scene.textures.exists('scene-xiaoman-pack-lamp') ? 'scene-xiaoman-pack-lamp' : '',
+      );
     }
   } else {
     const body = scene.add.graphics();
     DRAW[kind](body);
     root.add(body);
   }
-  const bowl = scene.add.graphics();
-  drawBowl(bowl);
-  bowl.setVisible(false);
-  root.add(bowl);
-  root.setData('bowl', bowl);
   root.setData('kind', kind);
   return root;
 }
@@ -181,29 +173,47 @@ export function setCarry(actor: Phaser.GameObjects.Container, on: boolean) {
   actor.setData('carryOn', on);
 }
 
-export function syncActor(actor: Phaser.GameObjects.Container, moving: boolean, time: number, bowlHigh: boolean) {
+export function setLamp(actor: Phaser.GameObjects.Container, on: boolean) {
+  actor.setData('lampOn', on);
+}
+
+export function syncActor(actor: Phaser.GameObjects.Container, moving: boolean, time: number, _bowlHigh: boolean) {
   const sprite = actor.getData('sprite') as Phaser.GameObjects.Image | undefined;
-  const bowl = actor.getData('bowl') as Phaser.GameObjects.Graphics | undefined;
+  if (!sprite) return;
   const bowlOn = Boolean(actor.getData('bowlOn'));
   const carryOn = Boolean(actor.getData('carryOn'));
-  const frames = actor.getData('frames') as string[] | undefined;
+  const lampOn = Boolean(actor.getData('lampOn'));
+  const frames = (actor.getData('frames') as string[] | undefined) ?? [];
+  const bowlFrames = (actor.getData('bowlFrames') as string[] | undefined) ?? [];
+  const carryFrames = (actor.getData('carryFrames') as string[] | undefined) ?? [];
+  const standKey = (actor.getData('standKey') as string | undefined) ?? frames[0];
   const bowlKey = actor.getData('bowlKey') as string | undefined;
   const carryKey = actor.getData('carryKey') as string | undefined;
+  const lampKey = actor.getData('lampKey') as string | undefined;
+  const packLampKey = actor.getData('packLampKey') as string | undefined;
   const height = (actor.getData('bodyHeight') as number | undefined) ?? 360;
-  const showPaintedBowl = Boolean(bowlOn && !moving && bowlKey && sprite);
-  const showCarry = Boolean(!showPaintedBowl && carryOn && !moving && carryKey && sprite);
-  const frameIndex = frames?.length ? (moving ? Math.floor(time / 160) % frames.length : 0) : 0;
-  if (sprite && frames?.length) {
-    const key = showPaintedBowl ? bowlKey! : showCarry ? carryKey! : moving ? frames[frameIndex] : frames[0];
-    if (sprite.texture.key !== key && sprite.scene.textures.exists(key)) {
-      sprite.setTexture(key);
-      fitHeight(sprite, height);
-    }
+  const frameIndex = frames.length ? (moving ? Math.floor(time / 160) % frames.length : 0) : 0;
+
+  let key = standKey ?? frames[0];
+  // 灯已借到且仍端碗：用背上有箱、手里有灯的合成帧，避免另画悬浮灯。
+  if (lampOn && bowlOn && packLampKey) {
+    key = packLampKey;
+  } else if (lampOn && lampKey && !bowlOn) {
+    key = lampKey;
+  } else if (bowlOn) {
+    if (moving && bowlFrames.length) key = bowlFrames[frameIndex % bowlFrames.length];
+    else if (bowlKey) key = bowlKey;
+  } else if (carryOn) {
+    if (moving && carryFrames.length) key = carryFrames[frameIndex % carryFrames.length];
+    else if (carryKey) key = carryKey;
+  } else if (moving && frames.length) {
+    key = frames[frameIndex];
+  } else if (standKey) {
+    key = standKey;
   }
-  if (!bowl) return;
-  const hands = WALK_HANDS[frameIndex] ?? WALK_HANDS[0];
-  const point = bowlHigh ? hands.other : hands.hold;
-  bowl.setVisible(bowlOn && !showPaintedBowl);
-  bowl.setScale(1);
-  bowl.setPosition(point[0], point[1]);
+
+  if (key && sprite.texture.key !== key && sprite.scene.textures.exists(key)) {
+    sprite.setTexture(key);
+    fitHeight(sprite, height);
+  }
 }

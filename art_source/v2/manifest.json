@@ -1,0 +1,100 @@
+[
+  {
+    "path": "01_backgrounds/shore.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGB",
+    "sha256": "daaf480a671f5088c214756b07d01200fc6b7b9ee7f18bb228771b0cd2f2ff3e"
+  },
+  {
+    "path": "01_backgrounds/village_gate.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGB",
+    "sha256": "71c84ab3f1271b6732b8997771bab12aeac3c069958d3cfe581a6480dc8e1a38"
+  },
+  {
+    "path": "01_backgrounds/mourning_hall.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGB",
+    "sha256": "5b6ca0b92cb9d7d6aa71d5b164bb72c364fcf672ac0fb482a99da1890308fddf"
+  },
+  {
+    "path": "01_backgrounds/village_street.png",
+    "width": 2172,
+    "height": 724,
+    "mode": "RGB",
+    "sha256": "6d7d54ee039f9ad4ee2271f45193381a2c48311975e262e1a418c7cf38fe87e3"
+  },
+  {
+    "path": "01_backgrounds/opening_room.png",
+    "width": 1672,
+    "height": 941,
+    "mode": "RGB",
+    "sha256": "c8025ec4d43725c6e3ea6c607f28868a878d7275d6a88c3cd775f586c281fb2d"
+  },
+  {
+    "path": "01_backgrounds/title.png",
+    "width": 1672,
+    "height": 941,
+    "mode": "RGB",
+    "sha256": "0bd4204611c87c1abf50571c0c83ee582019117e8fc1d04c87bd44cc01981d8a"
+  },
+  {
+    "path": "02_characters/xiaoman_motion_4x3.png",
+    "width": 1448,
+    "height": 1086,
+    "mode": "RGBA",
+    "sha256": "222dcf1f8556d5ee3c8a384f0bd86de0e135e8857f296b7a5c5b431dbfaa13f6"
+  },
+  {
+    "path": "02_characters/cast_6.png",
+    "width": 1774,
+    "height": 887,
+    "mode": "RGBA",
+    "sha256": "226efee64e9d67d3e4132816cfe341d25b4a2a06e631edb729ff583afef1a9e8"
+  },
+  {
+    "path": "02_characters/portraits_4x2.png",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "sha256": "2741f28e6d963c29d6d09d971b1a97445d7d70affc66ea67e9d46166eba888ff"
+  },
+  {
+    "path": "02_characters/special_actions_4x2.png",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "sha256": "c52cd1c833c8013dcb1a5b17b6ada79c2bb53a9021478ef8b69acb6fe4ef4fc1"
+  },
+  {
+    "path": "03_props/props_5x4.png",
+    "width": 1402,
+    "height": 1122,
+    "mode": "RGBA",
+    "sha256": "574ca71c26f6869b42bd706331060a5f1e4142df588d67852f299d4174567ef1"
+  },
+  {
+    "path": "04_closeups/street_observations_2x2.png",
+    "width": 1261,
+    "height": 1247,
+    "mode": "RGB",
+    "sha256": "1c7a0974bfef32dc4a7eb662edd10971cd3410a54fb54cbdade121194dea85ab"
+  },
+  {
+    "path": "04_closeups/memorial_cloths_lamp_2x2.png",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGB",
+    "sha256": "6c05e3fc04e1057c5e1d2b1906e53e34535c0537123794dc8964ead3117a4a1f"
+  },
+  {
+    "path": "05_ui/ui_components.png",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "sha256": "048eca16bbd24ecc6e66ba8a35b05e90250292a91aee599d29b1bd9a67306c12"
+  }
+]

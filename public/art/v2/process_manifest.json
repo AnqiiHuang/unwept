@@ -1,0 +1,774 @@
+[
+  {
+    "out": "public/art/v2/characters/xiaoman-stand.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-stand"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-1.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-1"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-2.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-2"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-3.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-3"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-bowl-stand.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-bowl-stand"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-bowl-1.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-bowl-1"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-bowl-2.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-bowl-2"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-bowl-3.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-bowl-3"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-carry-stand.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-carry-stand"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-carry-1.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-carry-1"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-carry-2.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-carry-2"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-carry-3.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "xiaoman_motion_4x3",
+    "role": "xiaoman-carry-3"
+  },
+  {
+    "out": "public/art/v2/characters/cast-xiaoman.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "cast_6",
+    "role": "cast-xiaoman"
+  },
+  {
+    "out": "public/art/v2/characters/guifen.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "cast_6",
+    "role": "guifen"
+  },
+  {
+    "out": "public/art/v2/characters/changgui.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "cast_6",
+    "role": "changgui"
+  },
+  {
+    "out": "public/art/v2/characters/jianjun.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "cast_6",
+    "role": "jianjun"
+  },
+  {
+    "out": "public/art/v2/characters/guyu.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "cast_6",
+    "role": "guyu"
+  },
+  {
+    "out": "public/art/v2/characters/yupo.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "cast_6",
+    "role": "yupo"
+  },
+  {
+    "out": "public/art/v2/characters/portrait-xiaoman.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "portraits_4x2"
+  },
+  {
+    "out": "public/art/v2/characters/portrait-xiaoman-look.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "portraits_4x2"
+  },
+  {
+    "out": "public/art/v2/characters/portrait-xiaoman-cry.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "portraits_4x2"
+  },
+  {
+    "out": "public/art/v2/characters/portrait-xiaoman-grief.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "portraits_4x2"
+  },
+  {
+    "out": "public/art/v2/characters/portrait-guifen.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "portraits_4x2"
+  },
+  {
+    "out": "public/art/v2/characters/portrait-changgui.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "portraits_4x2"
+  },
+  {
+    "out": "public/art/v2/characters/portrait-jianjun.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "portraits_4x2"
+  },
+  {
+    "out": "public/art/v2/characters/portrait-guyu.png",
+    "size": [
+      360,
+      420
+    ],
+    "source": "portraits_4x2"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-lamp.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "special_actions_4x2",
+    "role": "xiaoman-lamp"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-throat.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "special_actions_4x2",
+    "role": "xiaoman-throat"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-place-bowl.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "special_actions_4x2",
+    "role": "xiaoman-place-bowl"
+  },
+  {
+    "out": "public/art/v2/characters/xiaoman-pack-lamp.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "special_actions_4x2",
+    "role": "xiaoman-pack-lamp"
+  },
+  {
+    "out": "public/art/v2/characters/guifen-cloth.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "special_actions_4x2",
+    "role": "guifen-cloth"
+  },
+  {
+    "out": "public/art/v2/characters/changgui-work.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "special_actions_4x2",
+    "role": "changgui-work"
+  },
+  {
+    "out": "public/art/v2/characters/jianjun-keys.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "special_actions_4x2",
+    "role": "jianjun-keys"
+  },
+  {
+    "out": "public/art/v2/characters/guyu-squat.png",
+    "size": [
+      300,
+      500
+    ],
+    "source": "special_actions_4x2",
+    "role": "guyu-squat"
+  },
+  {
+    "out": "public/art/v2/props/chest-closed.png",
+    "size": [
+      280,
+      189
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/chest-open.png",
+    "size": [
+      296,
+      267
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/bowl.png",
+    "size": [
+      277,
+      178
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/sock-cover.png",
+    "size": [
+      227,
+      178
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/lamp.png",
+    "size": [
+      165,
+      289
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/stool.png",
+    "size": [
+      244,
+      247
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/cloth-long.png",
+    "size": [
+      285,
+      283
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/cloth-needle.png",
+    "size": [
+      269,
+      194
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/cloth-fold.png",
+    "size": [
+      283,
+      203
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/needle.png",
+    "size": [
+      158,
+      232
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/book-closed.png",
+    "size": [
+      248,
+      238
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/book-open.png",
+    "size": [
+      296,
+      271
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/chalk.png",
+    "size": [
+      250,
+      208
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/wood-tag.png",
+    "size": [
+      75,
+      267
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/key.png",
+    "size": [
+      223,
+      226
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/gong.png",
+    "size": [
+      253,
+      263
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/wood-post.png",
+    "size": [
+      247,
+      266
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/boat.png",
+    "size": [
+      296,
+      118
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/footprints.png",
+    "size": [
+      267,
+      264
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/props/reeds.png",
+    "size": [
+      276,
+      267
+    ],
+    "source": "props_5x4"
+  },
+  {
+    "out": "public/art/v2/closeups/stove.png",
+    "size": [
+      630,
+      623
+    ],
+    "source": "04_closeups/street_observations_2x2.png"
+  },
+  {
+    "out": "public/art/v2/closeups/window-lamp.png",
+    "size": [
+      630,
+      623
+    ],
+    "source": "04_closeups/street_observations_2x2.png"
+  },
+  {
+    "out": "public/art/v2/closeups/window-bed.png",
+    "size": [
+      630,
+      623
+    ],
+    "source": "04_closeups/street_observations_2x2.png"
+  },
+  {
+    "out": "public/art/v2/closeups/bowl-bed.png",
+    "size": [
+      630,
+      623
+    ],
+    "source": "04_closeups/street_observations_2x2.png"
+  },
+  {
+    "out": "public/art/v2/closeups/portrait-elder.png",
+    "size": [
+      768,
+      512
+    ],
+    "source": "04_closeups/memorial_cloths_lamp_2x2.png"
+  },
+  {
+    "out": "public/art/v2/closeups/cloths-hanging.png",
+    "size": [
+      768,
+      512
+    ],
+    "source": "04_closeups/memorial_cloths_lamp_2x2.png"
+  },
+  {
+    "out": "public/art/v2/closeups/lamp-split.png",
+    "size": [
+      768,
+      512
+    ],
+    "source": "04_closeups/memorial_cloths_lamp_2x2.png"
+  },
+  {
+    "out": "public/art/v2/closeups/lamp-steady.png",
+    "size": [
+      768,
+      512
+    ],
+    "source": "04_closeups/memorial_cloths_lamp_2x2.png"
+  },
+  {
+    "out": "public/art/v2/ui/ui-header.png",
+    "size": [
+      1456,
+      89
+    ],
+    "source": "ui_components",
+    "crop": [
+      40,
+      20,
+      1496,
+      120
+    ]
+  },
+  {
+    "out": "public/art/v2/ui/ui-btn-dark.png",
+    "size": [
+      380,
+      80
+    ],
+    "source": "ui_components",
+    "crop": [
+      40,
+      140,
+      420,
+      220
+    ]
+  },
+  {
+    "out": "public/art/v2/ui/ui-btn-mid.png",
+    "size": [
+      440,
+      80
+    ],
+    "source": "ui_components",
+    "crop": [
+      460,
+      140,
+      900,
+      220
+    ]
+  },
+  {
+    "out": "public/art/v2/ui/ui-btn-mute.png",
+    "size": [
+      440,
+      80
+    ],
+    "source": "ui_components",
+    "crop": [
+      940,
+      140,
+      1380,
+      220
+    ]
+  },
+  {
+    "out": "public/art/v2/ui/ui-journal.png",
+    "size": [
+      740,
+      512
+    ],
+    "source": "ui_components",
+    "crop": [
+      40,
+      250,
+      780,
+      780
+    ]
+  },
+  {
+    "out": "public/art/v2/ui/ui-frame-a.png",
+    "size": [
+      300,
+      432
+    ],
+    "source": "ui_components",
+    "crop": [
+      820,
+      260,
+      1120,
+      700
+    ]
+  },
+  {
+    "out": "public/art/v2/ui/ui-frame-b.png",
+    "size": [
+      300,
+      432
+    ],
+    "source": "ui_components",
+    "crop": [
+      1160,
+      260,
+      1460,
+      700
+    ]
+  },
+  {
+    "out": "public/art/v2/ui/ui-slots.png",
+    "size": [
+      1049,
+      180
+    ],
+    "source": "ui_components"
+  },
+  {
+    "out": "public/art/v2/ui/ui-arrow.png",
+    "size": [
+      296,
+      141
+    ],
+    "source": "ui_components"
+  },
+  {
+    "out": "public/art/v2/backgrounds/shore.png",
+    "size": [
+      5200,
+      1080
+    ],
+    "source": "01_backgrounds/shore.png",
+    "source_size": [
+      2172,
+      724
+    ],
+    "scaled_size": [
+      3240,
+      1080
+    ],
+    "placed_x": 0,
+    "world": [
+      5200,
+      1080
+    ],
+    "fill_left": 0,
+    "fill_right": 1960,
+    "note": "edge soft-fill only; needs painted extension if fill > 0"
+  },
+  {
+    "out": "public/art/v2/backgrounds/village_gate.png",
+    "size": [
+      4000,
+      1080
+    ],
+    "source": "01_backgrounds/village_gate.png",
+    "source_size": [
+      2172,
+      724
+    ],
+    "scaled_size": [
+      3240,
+      1080
+    ],
+    "placed_x": 0,
+    "world": [
+      4000,
+      1080
+    ],
+    "fill_left": 0,
+    "fill_right": 760,
+    "note": "edge soft-fill only; needs painted extension if fill > 0"
+  },
+  {
+    "out": "public/art/v2/backgrounds/mourning_hall.png",
+    "size": [
+      3600,
+      1080
+    ],
+    "source": "01_backgrounds/mourning_hall.png",
+    "source_size": [
+      2172,
+      724
+    ],
+    "scaled_size": [
+      3240,
+      1080
+    ],
+    "placed_x": 180,
+    "world": [
+      3600,
+      1080
+    ],
+    "fill_left": 180,
+    "fill_right": 180,
+    "note": "edge soft-fill only; needs painted extension if fill > 0"
+  },
+  {
+    "out": "public/art/v2/backgrounds/village_street.png",
+    "size": [
+      4600,
+      1080
+    ],
+    "source": "01_backgrounds/village_street.png",
+    "source_size": [
+      2172,
+      724
+    ],
+    "scaled_size": [
+      3240,
+      1080
+    ],
+    "placed_x": 0,
+    "world": [
+      4600,
+      1080
+    ],
+    "fill_left": 0,
+    "fill_right": 1360,
+    "note": "edge soft-fill only; needs painted extension if fill > 0"
+  },
+  {
+    "out": "public/art/v2/backgrounds/opening_room.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "source": "01_backgrounds/opening_room.png",
+    "scaled_size": [
+      1918,
+      1080
+    ],
+    "placed_x": 1,
+    "fill": 2,
+    "world": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "out": "public/art/v2/backgrounds/title.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "source": "01_backgrounds/title.png",
+    "scaled_size": [
+      1918,
+      1080
+    ],
+    "placed_x": 1,
+    "fill": 2,
+    "world": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "note": "cloths-hanging rough vertical run count",
+    "approx_strips": 0
+  }
+]

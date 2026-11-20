@@ -13,10 +13,15 @@ export class TitleScene extends Phaser.Scene {
     this.input.topOnly = true;
     audio.ensure(getSettings().master);
     this.add.rectangle(960, 540, 1920, 1080, 0x16130f);
-    this.add.rectangle(960, 390, 1920, 280, 0x2a2118, 0.45);
-    this.add.text(960, 250, '欠哭', textStyle(120, '#f4ecdf')).setOrigin(0.5);
-    this.add.text(960, 360, 'Unwept', { fontFamily: FONT, fontSize: '36px', color: '#d9c7a4' }).setOrigin(0.5);
-    this.add.text(960, 430, '1998 年秋　·　新坳', textStyle(28, '#cbbba6')).setOrigin(0.5);
+    if (this.textures.exists('plate-title')) {
+      this.add.image(960, 540, 'plate-title').setDisplaySize(1920, 1080).setDepth(0);
+      this.add.rectangle(960, 540, 1920, 1080, 0x100e0c, 0.38).setDepth(1);
+    } else {
+      this.add.rectangle(960, 390, 1920, 280, 0x2a2118, 0.45);
+    }
+    this.add.text(960, 250, '欠哭', textStyle(120, '#f4ecdf')).setOrigin(0.5).setDepth(2);
+    this.add.text(960, 360, 'Unwept', { fontFamily: FONT, fontSize: '36px', color: '#d9c7a4' }).setOrigin(0.5).setDepth(2);
+    this.add.text(960, 430, '1998 年秋　·　新坳', textStyle(28, '#cbbba6')).setOrigin(0.5).setDepth(2);
 
     const peek = peekSave();
     const note =
@@ -27,17 +32,18 @@ export class TitleScene extends Phaser.Scene {
         : peek.kind === 'error'
           ? peek.message
           : '还没有本地进度';
-    this.add.text(960, 500, note, textStyle(24, '#e6d7c4')).setOrigin(0.5);
+    this.add.text(960, 500, note, textStyle(24, '#e6d7c4')).setOrigin(0.5).setDepth(2);
 
-    makeButton(this, 960, 600, 420, 72, '新游戏', () => this.onNewGame(peek.kind === 'ok'));
+    makeButton(this, 960, 600, 420, 72, '新游戏', () => this.onNewGame(peek.kind === 'ok')).root.setDepth(3);
     const cont = makeButton(this, 960, 690, 420, 72, peek.kind === 'ok' ? '继续游戏' : '继续游戏（没有存档）', () => {
       if (peek.kind !== 'ok') return;
       setState(peek.state);
       this.scene.start(peek.state.openingDone ? 'world' : 'opening');
     });
+    cont.root.setDepth(3);
     cont.setEnabled(peek.kind === 'ok');
-    makeButton(this, 960, 780, 420, 72, '设置', () => this.openSettings());
-    this.add.text(960, 980, '开发版　·　试玩停在街窗。桶声之后还没做', textStyle(22, '#b5a894')).setOrigin(0.5);
+    makeButton(this, 960, 780, 420, 72, '设置', () => this.openSettings()).root.setDepth(3);
+    this.add.text(960, 980, '开发版　·　试玩停在街窗。桶声之后还没做', textStyle(22, '#b5a894')).setOrigin(0.5).setDepth(2);
 
     this.input.once('pointerdown', () => audio.ensure(getSettings().master));
     this.input.keyboard?.once('keydown', () => audio.ensure(getSettings().master));
